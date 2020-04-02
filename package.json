@@ -1,0 +1,37 @@
+{
+  "name": "edge-impulse-mobile-client",
+  "version": "1.0.0",
+  "description": "Mobile data acquisition and classification client for Edge Impulse",
+  "private": true,
+  "scripts": {
+    "build": "./node_modules/.bin/tsc -p client",
+    "lint": "./node_modules/.bin/tslint -p client/tsconfig.json",
+    "watch": "./node_modules/.bin/tsc-watch -p client --noClear"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brianweet/edge-impulse-example-browser-device.git"
+  },
+  "contributors": [
+    {
+      "name": "Brian Weeteling",
+      "email": "brianweeteling@gmail.com"
+    },
+    {
+      "name": "Jan Jongboom",
+      "email": "jan@edgeimpulse.com"
+    }
+  ],
+  "bugs": {
+    "url": "https://github.com/brianweet/edge-impulse-example-browser-device/issues"
+  },
+  "homepage": "https://github.com/brianweet/edge-impulse-example-browser-device#readme",
+  "dependencies": {
+    "axios": "^0.19.2",
+    "tslint": "^6.1.0",
+    "typescript": "^3.8.3"
+  },
+  "devDependencies": {
+    "tsc-watch": "^4.2.3"
+  }
+}

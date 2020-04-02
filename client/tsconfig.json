@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "incremental": true,
+        "target": "es2017",
+        "module": "amd",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "outFile": "../public/build/client/bundle.js",
+        "strict": true,
+        "sourceMap": true,
+        "lib": [ "dom", "dom.iterable", "es2017" ],
+        "allowJs": true,
+        "types": [ ]
+    },
+    "include": [
+        "../js-libs/almond.js",
+        "../js-libs/cbor.js",
+        "../js-libs/ziplib/*.js",
+        "./**/*"
+    ],
+    "exclude": ["build", "node_modules", "coverage"]
+}

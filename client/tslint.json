@@ -1,0 +1,50 @@
+{
+    "extends": "tslint:recommended",
+    "linterOptions": {
+        "exclude": [
+            "**/*.js",
+            "typed-event-emitter.ts",
+            "./api-definition/**"
+        ]
+    },
+    "rules": {
+        "max-line-length": {
+            "options": [ 120 ]
+        },
+        "no-restricted-globals": [
+            true, "name", "close", "history", "length", "open", "parent", "scroll", "self", "stop", "event"
+        ],
+        "no-console": false,
+        "quotemark": false,
+        "no-angle-bracket-type-assertion": false,
+        "prefer-const": false,
+        "variable-name": [ true, "allow-leading-underscore" ],
+        "arrow-parens": [ false ],
+        "member-access": [ true, "no-public" ],
+        "whitespace": [
+            true,
+            "check-branch",
+            "check-decl",
+            "check-operator",
+            "check-module",
+            "check-separator",
+            "check-rest-spread",
+            "check-type",
+            "check-type-operator",
+            "check-preblock",
+            "check-postbrace"
+        ],
+        "curly": [ true, "ignore-same-line" ],
+        "interface-name": false,
+        "one-line": [ true, "check-open-brace", "check-whitespace" ],
+        "object-literal-sort-keys": false,
+        "trailing-comma": false,
+        "array-type": [ true, "array" ],
+        "object-literal-shorthand": false,
+        "ordered-imports": false,
+        "interface-over-type-literal": false,
+        "max-classes-per-file": false,
+        "indent": [ true, "spaces", 4 ],
+        "no-floating-promises": true
+    }
+}

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Mobile client - Edge Impulse</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=0" />
+    <link rel="stylesheet" href="/assets/argon-dashboard.css">
+    <link rel="stylesheet" href="/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="/assets/mobileclient.css">
+    <!-- generics -->
+    <link rel="icon" href="/assets/favicon-color/favicon-32.png" sizes="32x32">
+    <link rel="icon" href="/assets/favicon-color/favicon-57.png" sizes="57x57">
+    <link rel="icon" href="/assets/favicon-color/favicon-76.png" sizes="76x76">
+    <link rel="icon" href="/assets/favicon-color/favicon-96.png" sizes="96x96">
+    <link rel="icon" href="/assets/favicon-color/favicon-128.png" sizes="128x128">
+    <link rel="icon" href="/assets/favicon-color/favicon-196.png" sizes="196x196">
+    <link rel="icon" href="/assets/favicon-color/favicon-228.png" sizes="228x228">
+    <!-- Android -->
+    <link rel="shortcut icon" href="/assets/favicon-color/favicon-196.png" sizes="196x196">
+    <!-- iOS -->
+    <link rel="apple-touch-icon" href="/assets/favicon-color/favicon-120.png" sizes="120x120">
+    <link rel="apple-touch-icon" href="/assets/favicon-color/favicon-152.png" sizes="152x152">
+    <link rel="apple-touch-icon" href="/assets/favicon-color/favicon-180.png" sizes="180x180">
+    <!-- Windows -->
+    <meta name="msapplication-TileColor" content="#FFFFFF">
+    <meta name="msapplication-TileImage" content="/assets/favicon-color/favicon-144.png">
+
+    <!-- (c) Copyright 2020, Edge Impulse Inc. and Brian Weeteling -->
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row align-items-center border-bottom" id="header-row">
+            <div class="col-auto mt-3 mb-3 pr-0">
+                <img src="/assets/mark.svg">
+            </div>
+            <div class="col align-middle">
+                <h1 class="text-dark mb-0 border-left pl-4">Data collection</h1>
+            </div>
+        </div>
+        <div class="row mt-4" id="loading-view">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-body text-center card-icon mt-4">
+                        <div class="sk-folding-cube">
+                            <div class="sk-cube1 sk-cube"></div>
+                            <div class="sk-cube2 sk-cube"></div>
+                            <div class="sk-cube4 sk-cube"></div>
+                            <div class="sk-cube3 sk-cube"></div>
+                        </div>
+                    </div>
+                    <div class="card-body text-center">
+                        <h2 id="loading-view-text">Loading...</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4" id="qrcode-view" style="display: none">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-body text-center text-light border-bottom card-icon pb-0">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                    <div class="card-body text-center pb-0">
+                        <h2>Scan QR code to continue</h2>
+                    </div>
+                    <div class="card-body text-center pt-2 mb-2">
+                        Head to the <strong>devices</strong> page in the Edge Impulse studio,
+                        and scan the QR code to start sampling from your phone.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4" id="remote-mgmt-connecting" style="display: none">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-body text-center card-icon mt-4">
+                        <div class="sk-folding-cube">
+                            <div class="sk-cube1 sk-cube"></div>
+                            <div class="sk-cube2 sk-cube"></div>
+                            <div class="sk-cube4 sk-cube"></div>
+                            <div class="sk-cube3 sk-cube"></div>
+                        </div>
+                    </div>
+                    <div class="card-body text-center">
+                        <h2>Connecting to Edge Impulse...</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4" id="remote-mgmt-connected" style="display: none">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-body text-center mt-4">
+                        <div class="col text-center">
+                            <i class="far fa-check-circle text-success" style="font-size: 10rem"></i>
+                        </div>
+                    </div>
+                    <div class="card-body text-center pb-0">
+                        <h2>Connected as <span id="connected-device-id"></span></h2>
+                    </div>
+                    <div class="card-body text-center pt-2 mb-2">
+                        You can collect data from this device from the
+                        <strong>Data acquisition</strong> page in
+                        the Edge Impulse studio.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4" id="remote-mgmt-failed" style="display: none">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-body text-center mt-4">
+                        <div class="col text-center">
+                            <i class="far fa-times-circle text-warning" style="font-size: 10rem"></i>
+                        </div>
+                    </div>
+                    <div class="card-body text-center pb-0">
+                        <h2>Not connected</h2>
+                    </div>
+                    <div class="card-body text-center pt-2 mb-2" id="connection-failed-message">
+                        Failed to authenticate.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4" id="sampling-in-progress" style="display: none">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-body text-center mt-5">
+                        <div class="col text-center mb--4">
+                            <div class="sampling-circle"></div>
+                            <div class="sampling-seconds-left text-gray" id="sampling-time-left">27s</div>
+                        </div>
+                    </div>
+                    <div class="card-body text-center pb-0 pt-0">
+                        <h2 id="sampling-recording-data-message">Recording data</h2>
+                    </div>
+                    <div class="card-body text-center pt-2 mb-2">
+                        From <span id="sampling-recording-sensor">built-in microphone</span>...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4" id="permission-view" style="display: none;">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-body text-center card-icon">
+                        <i class="fas fa-mobile text-light">
+                            <i class="fas fa-lock text-dark"></i>
+                        </i>
+                    </div>
+                    <div class="card-body text-center pb-0">
+                        <h2>Permission required</h2>
+                    </div>
+                    <div class="card-body text-center mb-4">
+                        <button type="button" class="btn btn-primary" id="grant-permissions-button">Give access to the accelerometer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col text-center mt-4">
+            <a class="btn btn-secondary" href="/classifier.html">Switch to classification mode</a>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="row">
+            <div class="col text-center">
+                <div class="copyright text-center text-muted">
+                    <i class="fas fa-code"></i>
+                    This client is <a href="https://github.com/edgeimpulse/mobile-client" class="font-weight-bold" target="_blank">open source</a>.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script type="text/javascript" src="/assets/axios.js"></script>
+    <script type="text/javascript" src="/assets/recorder.js"></script>
+    <script type="text/javascript" src="/build/client/bundle.js"></script>
+    <script>
+        require('client/init').default('data-collection');
+    </script>
+</body>
+</html>
