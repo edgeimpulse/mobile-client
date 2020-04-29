@@ -1,6 +1,6 @@
 # Edge Impulse Mobile acquisition and inferencing client
 
-Turns your mobile phone into a fully-supported client for [Edge Impulse](https://www.edgeimpulse.com). You can capture data from the accelerometer and microphone, verify your machine learning model, and run classification without leaving your browser. The easiest way to use this application is to go to your Edge Impulse project, choose **Devices**, then **Connect new device > Use your mobile phone**, and scan the QR code. This will register your device automatically under the current project.
+Turns your mobile phone into a fully-supported client for [Edge Impulse](https://www.edgeimpulse.com). You can capture data from the accelerometer and microphone, verify your machine learning model, and run classification without leaving your browser. The easiest way to use this application is to head to the [Edge Impulse documentation: Mobile phone](https://docs.edgeimpulse.com/docs/using-your-mobile-phone).
 
 ## Installation
 

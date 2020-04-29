@@ -49,6 +49,7 @@ export class ClassificationClientViews {
         if (getApiKey()) {
             // persist keys now...
             storeApiKey(getApiKey());
+            window.history.replaceState(null, '', window.location.pathname);
 
             this._elements.loadingText.textContent = 'Loading classifier...';
 
@@ -120,8 +121,6 @@ export class ClassificationClientViews {
         }
 
         this._elements.grantPermission.onclick = this.grantPermission.bind(this);
-
-        window.history.replaceState(null, '', window.location.pathname);
     }
 
     private switchView(view: HTMLElement) {

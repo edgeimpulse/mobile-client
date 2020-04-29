@@ -11,6 +11,7 @@ export const getApiKey = () =>
     localStorage.getItem(LS_API_KEY) ||
     '';
 export const storeApiKey = (apiKey: string) => {
+    console.log('storeApiKey', apiKey, window.location.search);
     localStorage.setItem(LS_API_KEY, apiKey);
 };
 

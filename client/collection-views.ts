@@ -64,6 +64,7 @@ export class DataCollectionClientViews {
             connection.on('connected', () => {
                 // persist keys now...
                 storeApiKey(getApiKey());
+                window.history.replaceState(null, '', window.location.pathname);
 
                 this._elements.deviceId.textContent = getDeviceId();
                 this.switchView(this._views.connected);
@@ -113,8 +114,6 @@ export class DataCollectionClientViews {
         else {
             this.switchView(this._views.qrcode);
         }
-
-        window.history.replaceState(null, '', window.location.pathname);
     }
 
     private switchView(view: HTMLElement) {
