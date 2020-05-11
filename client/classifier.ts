@@ -16,7 +16,7 @@ interface WasmRuntimeModule {
         frequency: number;
         frame_sample_count: number;
     };
-    _free(pointer: Uint8Array): void;
+    _free(pointer: number): void;
     _malloc(bytes: number): number;
 }
 
@@ -57,9 +57,9 @@ export class EdgeImpulseClassifier {
 
         const obj = this._arrayToHeap(rawData);
 
-        const ret = this._module.run_classifier(obj.byteOffset, rawData.length, debug);
+        const ret = this._module.run_classifier(obj.buffer.byteOffset, rawData.length, debug);
 
-        this._module._free(obj);
+        this._module._free(obj.ptr);
 
         if (ret.result !== 0) {
             throw new Error('Classification failed (err code: ' + ret.result + ')');
@@ -84,6 +84,6 @@ export class EdgeImpulseClassifier {
         const ptr = this._module._malloc(numBytes);
         const heapBytes = new Uint8Array(this._module.HEAPU8.buffer, ptr, numBytes);
         heapBytes.set(new Uint8Array(typedArray.buffer));
-        return heapBytes;
+        return { ptr: ptr, buffer: heapBytes };
     }
 }
