@@ -144,7 +144,7 @@
                                     record(e.data.buffer);
                                     break;
                                 case 'exportWAV':
-                                    exportWAV(e.data.type);
+                                    exportWAV(e.data.type, e.data.frequency);
                                     break;
                                 case 'getBuffer':
                                     getBuffer();
@@ -194,7 +194,7 @@
                             return result;
                         }
 
-                        function exportWAV(type) {
+                        function exportWAV(type, frequency) {
                             var buffers = [];
                             for (var channel = 0; channel < numChannels; channel++) {
                                 buffers.push(mergeBuffers(recBuffers[channel], recLength));
@@ -205,8 +205,8 @@
                             } else {
                                 interleaved = buffers[0];
                             }
-                            var downsampledBuffer = downsampleBuffer(interleaved, 16000);
-                            var dataview = encodeWAV(16000, downsampledBuffer);
+                            var downsampledBuffer = downsampleBuffer(interleaved, frequency);
+                            var dataview = encodeWAV(frequency, downsampledBuffer);
                             var audioBlob = new Blob([dataview], {
                                 type: type
                             });
@@ -362,7 +362,7 @@
                     }
                 }, {
                     key: 'exportWAV',
-                    value: function exportWAV(cb, mimeType) {
+                    value: function exportWAV(cb, mimeType, frequency) {
                         mimeType = mimeType || this.config.mimeType;
                         cb = cb || this.config.callback;
                         if (!cb) throw new Error('Callback not set');
@@ -371,7 +371,8 @@
 
                         this.worker.postMessage({
                             command: 'exportWAV',
-                            type: mimeType
+                            type: mimeType,
+                            frequency: frequency
                         });
                     }
                 }], [{

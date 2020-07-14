@@ -10,7 +10,7 @@ declare class Recorder {
     recording: boolean;
     clear(): void;
     stop(): void;
-    exportWAV(fn: (blob: Blob) => any): void;
+    exportWAV(fn: (blob: Blob) => any, mimeType: string | undefined, frequency: number): void;
 }
 
 export class MicrophoneSensor implements ISensor {
@@ -60,7 +60,7 @@ export class MicrophoneSensor implements ISensor {
         return {
             name: 'Microphone',
             maxSampleLength: 1 * 60,
-            frequencies: [ 16000 ]
+            frequencies: [ 16000, 44100, 48000 ]
         };
     }
 
@@ -70,8 +70,8 @@ export class MicrophoneSensor implements ISensor {
                 return reject('No audio stream');
             }
 
-            if (frequency !== 16000) {
-                return reject('Microphone only supports sampling at 16000Hz');
+            if (frequency !== 16000 && frequency !== 44100 && frequency !== 48000) {
+                return reject('Microphone only supports sampling at 16000Hz, 44100Hz and 48000Hz');
             }
 
             if (!this._audioContext) {
@@ -116,15 +116,15 @@ export class MicrophoneSensor implements ISensor {
                     // this._stream = undefined;
 
                     resolve({
-                        values: eiData.slice(0, length * 16),
-                        intervalMs: 1000 / 16000,
+                        values: eiData.slice(0, length * (frequency / 1000)),
+                        intervalMs: 1000 / frequency,
                         sensors: [{
                                 name: "audio",
                                 units: "wav"
                             }
                         ],
                     });
-                });
+                }, undefined, frequency);
             }, length + 100);
         });
     };
