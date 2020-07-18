@@ -1,12 +1,22 @@
 import { Sample } from "../models";
 
+export interface ISamplingOptions {
+    mode?: 'raw' | 'jpeg';
+    length?: number;
+    frequency?: number;
+    inputWidth?: number;
+    inputHeight?: number;
+    inputChannels?: number;
+    processing?: () => void;
+}
+
 export interface ISensor {
     getProperties(): {
         name: string,
         maxSampleLength: number,
         frequencies: number[]
     };
-    hasSensor(): boolean;
+    hasSensor(): Promise<boolean>;
     checkPermissions(fromClick: boolean): Promise<boolean>;
-    takeSample(lengthMs: number, frequency: number, processing: () => void): Promise<Sample>;
+    takeSample(samplingOptions: ISamplingOptions): Promise<Sample>;
 }

@@ -5,26 +5,26 @@
     <meta charset="utf-8">
     <title>Mobile client - Edge Impulse</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=0" />
-    <link rel="stylesheet" href="/assets/argon-dashboard.css">
-    <link rel="stylesheet" href="/fontawesome-free/css/all.min.css">
-    <link rel="stylesheet" href="/assets/mobileclient.css">
+    <link rel="stylesheet" href="assets/argon-dashboard.css">
+    <link rel="stylesheet" href="fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="assets/mobileclient.css">
     <!-- generics -->
-    <link rel="icon" href="/assets/favicon-color/favicon-32.png" sizes="32x32">
-    <link rel="icon" href="/assets/favicon-color/favicon-57.png" sizes="57x57">
-    <link rel="icon" href="/assets/favicon-color/favicon-76.png" sizes="76x76">
-    <link rel="icon" href="/assets/favicon-color/favicon-96.png" sizes="96x96">
-    <link rel="icon" href="/assets/favicon-color/favicon-128.png" sizes="128x128">
-    <link rel="icon" href="/assets/favicon-color/favicon-196.png" sizes="196x196">
-    <link rel="icon" href="/assets/favicon-color/favicon-228.png" sizes="228x228">
+    <link rel="icon" href="assets/favicon-color/favicon-32.png" sizes="32x32">
+    <link rel="icon" href="assets/favicon-color/favicon-57.png" sizes="57x57">
+    <link rel="icon" href="assets/favicon-color/favicon-76.png" sizes="76x76">
+    <link rel="icon" href="assets/favicon-color/favicon-96.png" sizes="96x96">
+    <link rel="icon" href="assets/favicon-color/favicon-128.png" sizes="128x128">
+    <link rel="icon" href="assets/favicon-color/favicon-196.png" sizes="196x196">
+    <link rel="icon" href="assets/favicon-color/favicon-228.png" sizes="228x228">
     <!-- Android -->
-    <link rel="shortcut icon" href="/assets/favicon-color/favicon-196.png" sizes="196x196">
+    <link rel="shortcut icon" href="assets/favicon-color/favicon-196.png" sizes="196x196">
     <!-- iOS -->
-    <link rel="apple-touch-icon" href="/assets/favicon-color/favicon-120.png" sizes="120x120">
-    <link rel="apple-touch-icon" href="/assets/favicon-color/favicon-152.png" sizes="152x152">
-    <link rel="apple-touch-icon" href="/assets/favicon-color/favicon-180.png" sizes="180x180">
+    <link rel="apple-touch-icon" href="assets/favicon-color/favicon-120.png" sizes="120x120">
+    <link rel="apple-touch-icon" href="assets/favicon-color/favicon-152.png" sizes="152x152">
+    <link rel="apple-touch-icon" href="assets/favicon-color/favicon-180.png" sizes="180x180">
     <!-- Windows -->
     <meta name="msapplication-TileColor" content="#FFFFFF">
-    <meta name="msapplication-TileImage" content="/assets/favicon-color/favicon-144.png">
+    <meta name="msapplication-TileImage" content="assets/favicon-color/favicon-144.png">
 
     <!-- (c) Copyright 2020, Edge Impulse Inc. and Brian Weeteling -->
 </head>
@@ -33,7 +33,7 @@
     <div class="container-fluid">
         <div class="row align-items-center border-bottom" id="header-row">
             <div class="col-auto mt-3 mb-3 pr-0">
-                <img src="/assets/mark.svg">
+                <img src="assets/mark.svg">
             </div>
             <div class="col align-middle">
                 <h1 class="text-dark mb-0 border-left pl-4">Data collection</h1>
@@ -129,12 +129,24 @@
                 </div>
             </div>
         </div>
-
-        <div class="row mt-4" id="sampling-in-progress" style="display: none">
+        <div class="row mt-4" id="capture-camera" style="display: none; position: relative;">
             <div class="col">
-                <div class="card shadow">
-                    <div class="card-body text-center mt-5">
-                        <div class="col text-center mb--4">
+                <div class="card shadow" style="position: relative;">
+                    <div class="card-body text-center">
+                        <video playsinline autoplay></video>
+                        <canvas style="display: none;"></canvas>
+                    </div>
+                    <div class="card-body text-center mb-4 pt-0 pb-2">
+                        <button type="button" class="btn btn-lg pl-4 pr-4 btn-primary" id="capture-camera-button"><i class="fa fa-camera mr-2"></i>Capture</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-4" id="sampling-in-progress" style="display: none; position: relative;">
+            <div class="col">
+                <div class="card shadow" style="position: relative;">
+                    <div id="sampling-circle" class="card-body text-center mt-5 mb-5">
+                        <div class="col text-center">
                             <div class="sampling-circle"></div>
                             <div class="sampling-seconds-left text-gray" id="sampling-time-left">27s</div>
                         </div>
@@ -170,7 +182,7 @@
 
     <div class="row">
         <div class="col text-center mt-4">
-            <a class="btn btn-secondary" href="/classifier.html">Switch to classification mode</a>
+            <a class="btn btn-secondary" href="classifier.html">Switch to classification mode</a>
         </div>
     </div>
 
@@ -185,9 +197,9 @@
         </div>
     </footer>
 
-    <script type="text/javascript" src="/assets/axios.js"></script>
-    <script type="text/javascript" src="/assets/recorder.js"></script>
-    <script type="text/javascript" src="/build/client/bundle.js"></script>
+    <script type="text/javascript" src="assets/axios.js"></script>
+    <script type="text/javascript" src="assets/recorder.js"></script>
+    <script type="text/javascript" src="build/client/bundle.js"></script>
     <script>
         require('client/init').default('data-collection');
     </script>

@@ -3,7 +3,7 @@ import {
     helloMessage, sampleRequestFailed, sampleStarted
 } from "./messages";
 import { parseMessage, createSignature } from "./utils";
-import { EdgeImpulseSettings, SampleDetails } from "./models";
+import { EdgeImpulseSettings, SampleDetails, Sample } from "./models";
 import { getRemoteManagementEndpoint, getIngestionApi } from "./settings";
 import { AxiosStatic } from '../node_modules/axios';
 import { Emitter } from "./typed-event-emitter";
@@ -102,14 +102,19 @@ export class RemoteManagementConnection extends Emitter<{
 
                     this.emit('samplingStarted', msg.length);
 
-                    const sampleData = await sensor.takeSample(msg.length, 1000 / msg.interval, () => {
-                        this.emit('samplingProcessing');
+                    const sampleData = await sensor.takeSample({
+                        length: msg.length,
+                        frequency: 1000 / msg.interval,
+                        processing: () => {
+                            this.emit('samplingProcessing');
+                        }
                     });
 
                     // Upload sample
                     await this.uploadSample(
                         sampleDetails,
-                        dataMessage(this._settings, sampleData)
+                        dataMessage(this._settings, sampleData),
+                        sampleData
                     );
                     this._state.sample = msg;
                     this._state.isSampling = false;
@@ -148,31 +153,50 @@ export class RemoteManagementConnection extends Emitter<{
         this._socket.send(JSON.stringify(data));
     };
 
+    readAsBinaryStringAsync(file: Blob) {
+        return new Promise((resolve, reject) => {
+            let reader = new FileReader();
+            reader.onload = () => {
+                resolve(reader.result);
+            };
+            reader.onerror = reject;
+            reader.readAsBinaryString(file);
+        })
+    }
+
     private async uploadSample(
         details: SampleDetails,
-        data: ReturnType < typeof dataMessage >
+        data: ReturnType < typeof dataMessage >,
+        sampleData: Sample
     ) {
         try {
             this.emit('samplingUploading');
 
-            console.log('uploading sample', data);
-
-            // Sign it please
             data.signature = await createSignature(details.hmacKey, data);
-            this.sendMessage(sampleUploading);
-            await axios({
-                url: getIngestionApi() + details.path,
-                method: "POST",
-                headers: {
-                    "x-api-key": this._settings.apiKey,
-                    "x-file-name": details.label,
-                    "Content-Type": "application/json"
-                },
-                data
-            });
-            this.sendMessage(sampleFinished);
 
-            this.emit('samplingFinished');
+            let formData = new FormData();
+            formData.append("message", new Blob([ (JSON.stringify(data))],
+                { type: "application/json"}), "message.json");
+            if (sampleData.attachments && sampleData.attachments[0].value) {
+                formData.append("image", sampleData.attachments[0].value, "image.jpg");
+            }
+
+            this.sendMessage(sampleUploading);
+
+            return new Promise((resolve: any, reject: any) => {
+
+                let xml = new XMLHttpRequest();
+                xml.onload = () => resolve();
+                xml.onerror = () => reject();
+                xml.open("post", getIngestionApi() + details.path)
+                xml.setRequestHeader("x-api-key", this._settings.apiKey)
+                xml.setRequestHeader("x-file-name", details.label)
+                xml.send(formData);
+
+                this.sendMessage(sampleFinished);
+                this.emit('samplingFinished');
+            })
+
         } catch (e) {
             alert(JSON.stringify(e));
         }

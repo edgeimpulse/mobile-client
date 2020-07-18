@@ -3,6 +3,7 @@ import { RemoteManagementConnection } from "./remote-mgmt";
 import { ISensor } from "./sensors/isensor";
 import { AccelerometerSensor } from "./sensors/accelerometer";
 import { MicrophoneSensor } from "./sensors/microphone";
+import { CameraSensor } from "./sensors/camera";
 
 export class DataCollectionClientViews {
     private _views = {
@@ -11,7 +12,8 @@ export class DataCollectionClientViews {
         connected: document.querySelector('#remote-mgmt-connected') as HTMLElement,
         connectionFailed: document.querySelector('#remote-mgmt-failed') as HTMLElement,
         sampling: document.querySelector('#sampling-in-progress') as HTMLElement,
-        permission: document.querySelector('#permission-view') as HTMLElement
+        permission: document.querySelector('#permission-view') as HTMLElement,
+        capture: document.querySelector('#capture-camera') as HTMLElement
     };
 
     private _elements = {
@@ -26,19 +28,25 @@ export class DataCollectionClientViews {
 
     private _sensors: ISensor[] = [];
 
-    constructor() {
+    async init() {
         storeDeviceId(getDeviceId());
 
         const accelerometer = new AccelerometerSensor();
-        if (accelerometer.hasSensor()) {
+        if (await accelerometer.hasSensor()) {
             console.log('has accelerometer');
             this._sensors.push(accelerometer);
         }
 
         const microphone = new MicrophoneSensor();
-        if (microphone.hasSensor()) {
+        if (await microphone.hasSensor()) {
             console.log('has microphone');
             this._sensors.push(microphone);
+        }
+
+        const camera = new CameraSensor();
+        if (await camera.hasSensor()) {
+            console.log('has camera');
+            this._sensors.push(camera);
         }
 
         if (getApiKey()) {
@@ -132,11 +140,21 @@ export class DataCollectionClientViews {
 
         this._elements.samplingRecordingSensor.textContent = sensor.getProperties().name.toLowerCase();
 
+        if (sensorName !== 'Camera') {
+            this._views.sampling.style.display = 'initial';
+        } else {
+            this._views.sampling.style.display = 'none';
+        }
+
         if (await sensor.checkPermissions(false)) {
-            this.switchView(this._views.sampling);
-            this._elements.samplingRecordingStatus.textContent = 'Starting in 2 seconds';
-            this._elements.samplingTimeLeft.textContent = 'Waiting...';
-            await this.sleep(2000);
+            if (sensorName !== 'Camera') {
+                this.switchView(this._views.sampling);
+                this._elements.samplingRecordingStatus.textContent = 'Starting in 2 seconds';
+                this._elements.samplingTimeLeft.textContent = 'Waiting...';
+                await this.sleep(2000);
+            } else {
+                this.switchView(this._views.capture);
+            }
             return sensor;
         }
         else {
@@ -154,10 +172,14 @@ export class DataCollectionClientViews {
 
                     sensor.checkPermissions(true).then(async (result) => {
                         if (result) {
-                            this.switchView(this._views.sampling);
-                            this._elements.samplingRecordingStatus.textContent = 'Starting in 2 seconds';
-                            this._elements.samplingTimeLeft.textContent = 'Waiting...';
-                            await this.sleep(2000);
+                            if (sensorName !== 'Camera') {
+                                this.switchView(this._views.sampling);
+                                this._elements.samplingRecordingStatus.textContent = 'Starting in 2 seconds';
+                                this._elements.samplingTimeLeft.textContent = 'Waiting...';
+                                await this.sleep(2000);
+                            } else {
+                                this.switchView(this._views.capture);
+                            }
                             resolve(sensor);
                         }
                         else {

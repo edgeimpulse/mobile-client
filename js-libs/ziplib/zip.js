@@ -870,8 +870,8 @@
 	}
 
 	var DEFAULT_WORKER_SCRIPTS = {
-		deflater: ['/assets/z-worker.js', '/assets/deflate.js'],
-		inflater: ['/assets/z-worker.js', '/assets/inflate.js']
+		deflater: ['assets/z-worker.js', 'deflate.js'],
+		inflater: ['assets/z-worker.js', 'inflate.js']
 	};
 	function createWorker(type, callback, onerror) {
 		if (obj.zip.workerScripts !== null && obj.zip.workerScriptsPath !== null) {

@@ -16,9 +16,10 @@ export interface DeviceSettings {
 export type Measurement = number[];
 export type Measurements = Measurement[];
 export type Sample = {
-    values: number[][] | number[];
+    values: number[][] | number[] | string[];
     intervalMs: number;
     sensors: { name: string, units: string }[];
+    attachments?: { value: Blob | null, options: { contentType: string}}[];
 }
 
 export interface SampleDetails {
@@ -28,4 +29,5 @@ export interface SampleDetails {
     hmacKey: string;
     interval: number;
     sensor: string;
+    attachments?: { value: Blob | null, options: { contentType: string}}[];
 }

@@ -1,7 +1,8 @@
-import { getApiKey, getDeviceId, storeApiKey, storeDeviceId } from "./settings";
-import { ISensor } from "./sensors/isensor";
+import { getApiKey, getDeviceId, storeApiKey, storeDeviceId, getStudioEndpoint } from "./settings";
+import { ISensor, ISamplingOptions } from "./sensors/isensor";
 import { AccelerometerSensor } from "./sensors/accelerometer";
 import { MicrophoneSensor } from "./sensors/microphone";
+import { CameraSensor } from "./sensors/camera";
 import { ClassificationLoader } from "./classification-loader";
 import { EdgeImpulseClassifier } from "./classifier";
 
@@ -11,7 +12,8 @@ export class ClassificationClientViews {
         qrcode: document.querySelector('#qrcode-view') as HTMLElement,
         connectionFailed: document.querySelector('#remote-mgmt-failed') as HTMLElement,
         selectSensor: document.querySelector('#permission-view') as HTMLElement,
-        inferencing: document.querySelector('#inferencing-in-progress') as HTMLElement
+        inferencing: document.querySelector('#inferencing-in-progress') as HTMLElement,
+        capture: document.querySelector('#capture-camera') as HTMLElement
     };
 
     private _elements = {
@@ -23,27 +25,36 @@ export class ClassificationClientViews {
         inferencingMessage: document.querySelector('#inferencing-recording-data-message') as HTMLElement,
         inferencingResult: document.querySelector('#inferencing-result') as HTMLElement,
         inferencingResultTable: document.querySelector('#inferencing-result table') as HTMLElement,
-        buildProgress: document.querySelector('#build-progress') as HTMLElement
-    };
+        buildProgress: document.querySelector('#build-progress') as HTMLElement,
+        interferenceCaptureBody: document.querySelector('#inference-capture-body') as HTMLElement,
+        interferenceCaptureButton: document.querySelector('#inference-capture-button') as HTMLElement,
+        inferenceRecordingMessageBody: document.querySelector('#inference-recording-message-body') as HTMLElement
+    }
 
     private _sensors: ISensor[] = [];
     private _classifier: EdgeImpulseClassifier | undefined;
     private _firstInference = true;
     private _inferenceCount = 0;
 
-    constructor() {
+    async init() {
         storeDeviceId(getDeviceId());
 
         const accelerometer = new AccelerometerSensor();
-        if (accelerometer.hasSensor()) {
+        if (await accelerometer.hasSensor()) {
             console.log('has accelerometer');
             this._sensors.push(accelerometer);
         }
 
         const microphone = new MicrophoneSensor();
-        if (microphone.hasSensor()) {
+        if (await microphone.hasSensor()) {
             console.log('has microphone');
             this._sensors.push(microphone);
+        }
+
+        const camera = new CameraSensor();
+        if (await camera.hasSensor()) {
+            console.log('has camera');
+            this._sensors.push(camera);
         }
 
         if (getApiKey()) {
@@ -55,11 +66,13 @@ export class ClassificationClientViews {
 
             // tslint:disable-next-line: no-floating-promises
             (async () => {
-                let loader = new ClassificationLoader('https://studio.edgeimpulse.com', getApiKey());
+                let loader = new ClassificationLoader(getStudioEndpoint(), getApiKey());
                 loader.on('status', msg => {
+                    console.log('status', msg);
                     this._elements.loadingText.textContent = msg;
                 });
                 loader.on('buildProgress', progress => {
+                    console.log('buildProgress', progress);
                     if (typeof progress === 'string') {
                         this._elements.buildProgress.style.display = 'block';
                         this._elements.buildProgress.textContent = progress || ' ';
@@ -85,6 +98,9 @@ export class ClassificationClientViews {
                     }
                     else if (props.sensor === 'microphone') {
                         this._elements.grantPermission.textContent = 'Give access to the microphone';
+                    }
+                    else if (props.sensor === 'camera') {
+                        this._elements.grantPermission.textContent = 'Give access to the camera';
                     }
                     else {
                         throw new Error('Unexpected sensor: ' + props.sensor);
@@ -156,21 +172,44 @@ export class ClassificationClientViews {
 
                     this._elements.inferencingMessage.textContent = 'Sampling...';
 
-                    let timeLeft = sampleWindowLength;
-                    this._elements.inferencingTimeLeft.textContent = Math.floor(timeLeft / 1000) + 's';
-                    let iv = setInterval(() => {
-                        timeLeft -= 1000;
+                    let iv;
+                    if (prop.sensor !== 'camera') {
+                        let timeLeft = sampleWindowLength;
                         this._elements.inferencingTimeLeft.textContent = Math.floor(timeLeft / 1000) + 's';
-                    }, 1000);
+                        iv = setInterval(() => {
+                            timeLeft -= 1000;
+                            this._elements.inferencingTimeLeft.textContent = Math.floor(timeLeft / 1000) + 's';
+                        }, 1000);
+                    }
 
                     try {
                         // clear out so it's clear we're inferencing
-                        let data = await sensor.takeSample(sampleWindowLength, prop.frequency, () => { /* noop */ });
-                        clearInterval(iv);
+                        let samplingOptions: ISamplingOptions = { }
+                        if (prop.sensor === 'camera') {
+                            samplingOptions.mode = 'raw';
+                            samplingOptions.inputWidth = prop.inputWidth;
+                            samplingOptions.inputHeight = prop.inputHeight;
+                        } else {
+                            samplingOptions.length = sampleWindowLength;
+                            samplingOptions.frequency = prop.frequency ;
+                        }
+
+                        if (prop.sensor === 'camera') {
+                            this.switchView(this._views.capture);
+                        }
+
+                        let data = await sensor.takeSample(samplingOptions);
+                        if (iv) {
+                            clearInterval(iv);
+                        }
+
+                        if (prop.sensor === 'camera') {
+                            this.switchView(this._views.inferencing);
+                        }
 
                         // give some time to give the idea we're inferencing
                         this._elements.inferencingMessage.textContent = 'Inferencing...';
-                        await this.sleep(200);
+                        await this.sleep(500);
 
                         let d: number[];
                         if (data.values[0] instanceof Array) {
@@ -253,9 +292,18 @@ export class ClassificationClientViews {
                             tbody.insertBefore(row, tbody.firstChild);
                         }
 
-                        this._elements.inferencingTimeLeft.textContent = 'Waiting';
-                        this._elements.inferencingMessage.textContent = 'Starting in 2 seconds...';
-                        setTimeout(sampleNextWindow, 2000);
+                        if (prop.sensor === 'camera') {
+                            this._elements.interferenceCaptureBody.style.display = 'initial'
+                            this._elements.inferenceRecordingMessageBody.style.display = 'none'
+                            this._elements.interferenceCaptureButton.onclick = sampleNextWindow;
+                        } else {
+                            let startDelay = prop.sensor === 'camera' ? 5 : 2;
+                            this._elements.interferenceCaptureBody.style.display = 'none'
+                            this._elements.inferenceRecordingMessageBody.style.display = 'initial'
+                            this._elements.inferencingTimeLeft.textContent = 'Waiting';
+                            this._elements.inferencingMessage.textContent = `Starting in ${startDelay} seconds...`;
+                            setTimeout(sampleNextWindow, startDelay * 1000);
+                        }
                     }
                     catch (ex) {
                         clearInterval(iv);
@@ -264,7 +312,7 @@ export class ClassificationClientViews {
                     }
                 };
 
-                setTimeout(sampleNextWindow, 2000);
+                setTimeout(sampleNextWindow, prop.sensor === 'camera' ? 0 : 2000);
             }
             else {
                 alert('User has rejected ' + (prop.sensor) + ' permissions')

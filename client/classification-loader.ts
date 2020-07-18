@@ -55,7 +55,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
 
         this.emit('status', 'Extracted ' + data.length + ' files');
 
-        const wasmFile = data.find(d => d.filename.indexOf('.wasm'));
+        const wasmFile = data.find(d => d.filename.endsWith('.wasm'));
         if (!wasmFile) {
             throw new Error('Cannot find .wasm file in ZIP file');
         }

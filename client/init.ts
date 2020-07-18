@@ -1,12 +1,24 @@
 import { DataCollectionClientViews } from "./collection-views";
 import { ClassificationClientViews } from "./classification-views";
+import { getIngestionApi, storeIngestionApi, getRemoteManagementEndpoint,
+    storeRemoteManagementEndpoint, storeStudioEndpoint, getStudioEndpoint } from "./settings";
 
-export default function mobileClientLoader(mode: 'data-collection' | 'classifier') {
+export default async function mobileClientLoader(mode: 'data-collection' | 'classifier') {
+
+    storeIngestionApi(getIngestionApi());
+    storeRemoteManagementEndpoint(getRemoteManagementEndpoint());
+    storeStudioEndpoint(getStudioEndpoint());
+
     if (mode === 'data-collection') {
-        (window as any).client = new DataCollectionClientViews();
+        let client = new DataCollectionClientViews();
+        await client.init();
+        (window as any).client = client;
+
     }
     else if (mode === 'classifier') {
-        (window as any).client = new ClassificationClientViews();
+        let client = new ClassificationClientViews();
+        await client.init();
+        (window as any).client = client;
     }
 
     // tslint:disable-next-line:no-console

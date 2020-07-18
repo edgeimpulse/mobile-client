@@ -375,6 +375,17 @@ body {
     background-color: #f6572c;
 }
 
+#sampling-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+video {
+    max-width: 100%;
+    max-height: 50%;
+}
+
 .sampling-circle {
     animation: spin 4s linear infinite;
     margin: 0 auto;
@@ -395,9 +406,18 @@ body {
 }
 
 .sampling-seconds-left {
-    transform: translateY(-120px);
     font-weight: 300;
     font-size: 1.8rem;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: auto;
+    margin-bottom: auto;
+    height: 2.9rem;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
 }
 
 #permission-view .fa-mobile {

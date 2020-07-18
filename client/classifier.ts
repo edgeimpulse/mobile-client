@@ -15,6 +15,8 @@ interface WasmRuntimeModule {
         sensor: number;
         frequency: number;
         frame_sample_count: number;
+        input_width: number;
+        input_height: number;
     };
     _free(pointer: number): void;
     _malloc(bytes: number): number;
@@ -45,10 +47,23 @@ export class EdgeImpulseClassifier {
     getProperties() {
         const ret = this._module.get_properties();
 
+        let sensor;
+        if (ret.sensor === 0 || ret.sensor === 2) {
+            sensor = "accelerometer";
+        } else if (ret.sensor === 1) {
+            sensor = "microphone";
+        } else if (ret.sensor === 3) {
+            sensor = "camera";
+        } else {
+            throw new Error('Unknown sensor.')
+        }
+
         return {
-            sensor: ret.sensor === 1 ? 'microphone' : 'accelerometer',
+            sensor: sensor,
             frequency: ret.frequency,
-            frameSampleCount: ret.frame_sample_count
+            frameSampleCount: ret.frame_sample_count,
+            inputWidth: ret.input_width,
+            inputHeight: ret.input_height
         };
     }
 

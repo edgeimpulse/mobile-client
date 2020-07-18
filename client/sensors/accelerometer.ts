@@ -1,4 +1,4 @@
-import { ISensor } from "./isensor";
+import { ISensor, ISamplingOptions } from "./isensor";
 import { Sample } from "../models";
 
 export class AccelerometerSensor implements ISensor {
@@ -8,7 +8,7 @@ export class AccelerometerSensor implements ISensor {
         /* noop */
     }
 
-    hasSensor() {
+    async hasSensor() {
         return typeof DeviceMotionEvent !== 'undefined';
     }
 
@@ -46,8 +46,16 @@ export class AccelerometerSensor implements ISensor {
         };
     }
 
-    takeSample(length: number, frequency: number, processing: () => void) {
+    takeSample(samplingOptions: ISamplingOptions) {
         return new Promise<Sample>((resolve, _reject) => {
+            if (!samplingOptions.frequency) {
+                throw new Error('Frequency not specified')
+            }
+            if (!samplingOptions.length) {
+                throw new Error('Frequency not specified')
+            }
+            let frequency = samplingOptions.frequency;
+            let length = samplingOptions.length;
             let currentSample: { x: number, y: number, z: number } | undefined;
             let sampleValues: number[][] = [];
 

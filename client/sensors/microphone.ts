@@ -1,4 +1,4 @@
-import { ISensor } from "./isensor";
+import { ISensor, ISamplingOptions } from "./isensor";
 import { Sample } from "../models";
 
 declare class Recorder {
@@ -28,7 +28,7 @@ export class MicrophoneSensor implements ISensor {
         }
     }
 
-    hasSensor() {
+    async hasSensor() {
         return typeof window.AudioContext !== 'undefined' || typeof (<any>window).webkitAudioContext !== 'undefined';
     }
 
@@ -64,11 +64,19 @@ export class MicrophoneSensor implements ISensor {
         };
     }
 
-    takeSample(length: number, frequency: number, processing: () => void) {
+    takeSample(samplingOptions: ISamplingOptions) {
         return new Promise<Sample>((resolve, reject) => {
             if (!this._stream) {
                 return reject('No audio stream');
             }
+            if (!samplingOptions.frequency) {
+                throw new Error('Frequency not specified')
+            }
+            if (!samplingOptions.length) {
+                throw new Error('Frequency not specified')
+            }
+            let length = samplingOptions.length;
+            let frequency = samplingOptions.frequency;
 
             if (frequency !== 16000 && frequency !== 44100 && frequency !== 48000) {
                 return reject('Microphone only supports sampling at 16000Hz, 44100Hz and 48000Hz');
@@ -99,7 +107,9 @@ export class MicrophoneSensor implements ISensor {
                 // tell the recorder to stop the recording
                 // this._stream.getAudioTracks()[0].stop();
 
-                processing();
+                if (samplingOptions.processing) {
+                    samplingOptions.processing();
+                }
 
                 if (!this._recorder) return;
 
