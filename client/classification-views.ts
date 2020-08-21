@@ -13,7 +13,6 @@ export class ClassificationClientViews {
         connectionFailed: document.querySelector('#remote-mgmt-failed') as HTMLElement,
         selectSensor: document.querySelector('#permission-view') as HTMLElement,
         inferencing: document.querySelector('#inferencing-in-progress') as HTMLElement,
-        capture: document.querySelector('#capture-camera') as HTMLElement
     };
 
     private _elements = {
@@ -21,14 +20,16 @@ export class ClassificationClientViews {
         connectionFailedMessage: document.querySelector('#connection-failed-message') as HTMLElement,
         loadingText: document.querySelector('#loading-view-text') as HTMLElement,
         grantPermission: document.querySelector('#grant-permissions-button') as HTMLElement,
+        inferencingSamplingBody: document.querySelector('#inferencing-sampling-body') as HTMLElement,
         inferencingTimeLeft: document.querySelector('#inferencing-time-left') as HTMLElement,
         inferencingMessage: document.querySelector('#inferencing-recording-data-message') as HTMLElement,
         inferencingResult: document.querySelector('#inferencing-result') as HTMLElement,
         inferencingResultTable: document.querySelector('#inferencing-result table') as HTMLElement,
         buildProgress: document.querySelector('#build-progress') as HTMLElement,
-        interferenceCaptureBody: document.querySelector('#inference-capture-body') as HTMLElement,
-        interferenceCaptureButton: document.querySelector('#inference-capture-button') as HTMLElement,
-        inferenceRecordingMessageBody: document.querySelector('#inference-recording-message-body') as HTMLElement
+        inferenceCaptureBody: document.querySelector('#capture-camera') as HTMLElement,
+        inferenceCaptureButton: document.querySelector('#capture-camera-button') as HTMLElement,
+        inferenceRecordingMessageBody: document.querySelector('#inference-recording-message-body') as HTMLElement,
+        switchToDataCollection: document.querySelector('#switch-to-data-collection') as HTMLAnchorElement
     }
 
     private _sensors: ISensor[] = [];
@@ -55,6 +56,10 @@ export class ClassificationClientViews {
         if (await camera.hasSensor()) {
             console.log('has camera');
             this._sensors.push(camera);
+        }
+
+        if (window.location.search.indexOf('from=camera') > -1) {
+            this._elements.switchToDataCollection.href = 'camera.html';
         }
 
         if (getApiKey()) {
@@ -91,6 +96,9 @@ export class ClassificationClientViews {
                     }
                     else if (props.sensor === 'accelerometer' && !accelerometer.hasSensor()) {
                         throw new Error('Model expects accelerometer, but device has none');
+                    }
+                    else if (props.sensor === 'camera' && !camera.hasSensor()) {
+                        throw new Error('Model expects camera, but device has none');
                     }
 
                     if (props.sensor === 'accelerometer') {
@@ -163,6 +171,17 @@ export class ClassificationClientViews {
 
                 console.log('prop', prop);
 
+                if (prop.sensor === 'camera') {
+                    this._elements.inferencingSamplingBody.style.display = 'none';
+                    this._elements.inferenceCaptureBody.style.display = '';
+                    this._elements.inferenceRecordingMessageBody.style.display = 'none';
+                }
+                else {
+                    this._elements.inferencingSamplingBody.style.display = '';
+                    this._elements.inferenceCaptureBody.style.display = 'none';
+                    this._elements.inferenceRecordingMessageBody.style.display = '';
+                }
+
                 let sampleWindowLength = prop.frameSampleCount * (1000 / prop.frequency);
                 this._elements.inferencingTimeLeft.textContent = 'Waiting';
                 this._elements.inferencingMessage.textContent = 'Starting in 2 seconds...';
@@ -184,7 +203,7 @@ export class ClassificationClientViews {
 
                     try {
                         // clear out so it's clear we're inferencing
-                        let samplingOptions: ISamplingOptions = { }
+                        let samplingOptions: ISamplingOptions = { };
                         if (prop.sensor === 'camera') {
                             samplingOptions.mode = 'raw';
                             samplingOptions.inputWidth = prop.inputWidth;
@@ -194,22 +213,22 @@ export class ClassificationClientViews {
                             samplingOptions.frequency = prop.frequency ;
                         }
 
-                        if (prop.sensor === 'camera') {
-                            this.switchView(this._views.capture);
-                        }
-
                         let data = await sensor.takeSample(samplingOptions);
                         if (iv) {
                             clearInterval(iv);
                         }
 
                         if (prop.sensor === 'camera') {
-                            this.switchView(this._views.inferencing);
+                            console.log('classification disable button');
+                            this._elements.inferenceCaptureButton.innerHTML = '<i class="fa fa-camera mr-2"></i>Inferencing...';
+                            this._elements.inferenceCaptureButton.classList.add('disabled');
+                            await this.sleep(100);
                         }
-
-                        // give some time to give the idea we're inferencing
-                        this._elements.inferencingMessage.textContent = 'Inferencing...';
-                        await this.sleep(500);
+                        else {
+                            // give some time to give the idea we're inferencing
+                            this._elements.inferencingMessage.textContent = 'Inferencing...';
+                            await this.sleep(500);
+                        }
 
                         let d: number[];
                         if (data.values[0] instanceof Array) {
@@ -293,12 +312,17 @@ export class ClassificationClientViews {
                         }
 
                         if (prop.sensor === 'camera') {
-                            this._elements.interferenceCaptureBody.style.display = 'initial'
+                            console.log('classification enable button again');
+                            this._elements.inferenceCaptureBody.style.display = 'initial'
                             this._elements.inferenceRecordingMessageBody.style.display = 'none'
-                            this._elements.interferenceCaptureButton.onclick = sampleNextWindow;
-                        } else {
-                            let startDelay = prop.sensor === 'camera' ? 5 : 2;
-                            this._elements.interferenceCaptureBody.style.display = 'none'
+                            this._elements.inferenceCaptureButton.innerHTML = '<i class="fa fa-camera mr-2"></i>Classify';
+                            this._elements.inferenceCaptureButton.classList.remove('disabled');
+                            // immediately sample next window
+                            setTimeout(sampleNextWindow, 0);
+                        }
+                        else {
+                            let startDelay = 2;
+                            this._elements.inferenceCaptureBody.style.display = 'none'
                             this._elements.inferenceRecordingMessageBody.style.display = 'initial'
                             this._elements.inferencingTimeLeft.textContent = 'Waiting';
                             this._elements.inferencingMessage.textContent = `Starting in ${startDelay} seconds...`;
@@ -307,6 +331,7 @@ export class ClassificationClientViews {
                     }
                     catch (ex) {
                         clearInterval(iv);
+                        console.error(ex);
                         this._elements.connectionFailedMessage.textContent = (ex.message || ex.toString());
                         this.switchView(this._views.connectionFailed);
                     }
@@ -318,6 +343,7 @@ export class ClassificationClientViews {
                 alert('User has rejected ' + (prop.sensor) + ' permissions')
             }
         }).catch(err => {
+            console.error(err);
             this._elements.connectionFailedMessage.textContent = err;
             this.switchView(this._views.connectionFailed);
         });

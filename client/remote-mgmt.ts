@@ -8,6 +8,7 @@ import { getRemoteManagementEndpoint, getIngestionApi } from "./settings";
 import { AxiosStatic } from '../node_modules/axios';
 import { Emitter } from "./typed-event-emitter";
 import { ISensor } from "./sensors/isensor";
+import { Uploader } from "./uploader";
 
 declare var axios: AxiosStatic;
 
@@ -32,6 +33,7 @@ export class RemoteManagementConnection extends Emitter<{
     private _socketHeartbeat = -1;
     private _state: RemoteManagementConnectionState;
     private _settings: EdgeImpulseSettings;
+    private _uploader: Uploader;
 
     constructor(settings: EdgeImpulseSettings,
                 waitForSamplingToStart?: (sensorName: string) => Promise<ISensor>) {
@@ -46,6 +48,7 @@ export class RemoteManagementConnection extends Emitter<{
             isSampling: false
         };
         this._settings = settings;
+        this._uploader = new Uploader(settings.apiKey);
 
         this._socket.onopen = _e => {
             this._state.socketConnected = true;
@@ -95,7 +98,11 @@ export class RemoteManagementConnection extends Emitter<{
                     // Start to sample
                     this._state.sample = msg;
                     this._state.isSampling = true;
-                    this.sendMessage(sampleStarted);
+
+                    if (msg.sensor !== 'Camera') {
+                        this.sendMessage(sampleStarted);
+                    }
+
                     const sampleDetails = {
                         ...msg
                     };
@@ -111,13 +118,26 @@ export class RemoteManagementConnection extends Emitter<{
                     });
 
                     // Upload sample
-                    await this.uploadSample(
-                        sampleDetails,
-                        dataMessage(this._settings, sampleData),
-                        sampleData
-                    );
-                    this._state.sample = msg;
-                    this._state.isSampling = false;
+                    try {
+                        this.emit('samplingUploading');
+                        this.sendMessage(sampleUploading);
+
+                        await this._uploader.uploadSample(
+                            sampleDetails,
+                            dataMessage(this._settings, sampleData),
+                            sampleData
+                        );
+
+                        this.sendMessage(sampleFinished);
+                        this.emit('samplingFinished');
+                    }
+                    catch (ex) {
+                        alert(ex.message || ex.toString());
+                    }
+                    finally {
+                        this._state.sample = msg;
+                        this._state.isSampling = false;
+                    }
                 }
                 catch (ex) {
                     this.emit('samplingFinished');
@@ -162,43 +182,5 @@ export class RemoteManagementConnection extends Emitter<{
             reader.onerror = reject;
             reader.readAsBinaryString(file);
         })
-    }
-
-    private async uploadSample(
-        details: SampleDetails,
-        data: ReturnType < typeof dataMessage >,
-        sampleData: Sample
-    ) {
-        try {
-            this.emit('samplingUploading');
-
-            data.signature = await createSignature(details.hmacKey, data);
-
-            let formData = new FormData();
-            formData.append("message", new Blob([ (JSON.stringify(data))],
-                { type: "application/json"}), "message.json");
-            if (sampleData.attachments && sampleData.attachments[0].value) {
-                formData.append("image", sampleData.attachments[0].value, "image.jpg");
-            }
-
-            this.sendMessage(sampleUploading);
-
-            return new Promise((resolve: any, reject: any) => {
-
-                let xml = new XMLHttpRequest();
-                xml.onload = () => resolve();
-                xml.onerror = () => reject();
-                xml.open("post", getIngestionApi() + details.path)
-                xml.setRequestHeader("x-api-key", this._settings.apiKey)
-                xml.setRequestHeader("x-file-name", details.label)
-                xml.send(formData);
-
-                this.sendMessage(sampleFinished);
-                this.emit('samplingFinished');
-            })
-
-        } catch (e) {
-            alert(JSON.stringify(e));
-        }
     }
 }

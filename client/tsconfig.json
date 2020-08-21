@@ -16,6 +16,8 @@
         "../js-libs/almond.js",
         "../js-libs/cbor.js",
         "../js-libs/ziplib/*.js",
+        "../js-libs/jquery.min.js",
+        "../js-libs/bootstrap-notify.js",
         "./**/*"
     ],
     "exclude": ["build", "node_modules", "coverage"]

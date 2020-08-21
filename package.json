@@ -32,6 +32,7 @@
     "typescript": "^3.8.3"
   },
   "devDependencies": {
+    "@types/jquery": "^3.5.1",
     "tsc-watch": "^4.2.3"
   }
 }

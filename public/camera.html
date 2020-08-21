@@ -36,7 +36,7 @@
                 <img src="assets/mark.svg">
             </div>
             <div class="col align-middle">
-                <h1 class="text-dark mb-0 border-left pl-4">Classifier</h1>
+                <h1 class="text-dark mb-0 border-left pl-4"><i class="fas fa-camera-retro mr-2"></i> Data collection</h1>
             </div>
         </div>
         <div class="row mt-4" id="loading-view">
@@ -112,43 +112,39 @@
                     <div class="card-body text-center pb-0">
                         <h2>Permission required</h2>
                     </div>
-                    <div class="card-body text-center mb-4">
+                    <div class="card-body text-center">
                         <button type="button" class="btn btn-primary" id="grant-permissions-button">Give access to the accelerometer</button>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="row mt-4" id="inferencing-in-progress" style="display: none">
+
+        <div class="row mt-4" id="capture-camera" style="display: none; position: relative;">
             <div class="col">
-                <div class="card shadow">
-                    <div class="card-body text-center mt-5 mb-5" id="inferencing-sampling-body">
-                        <div class="col text-center">
-                            <div class="sampling-circle"></div>
-                            <div class="sampling-seconds-left text-gray" id="inferencing-time-left">2s</div>
+                <div class="card shadow" style="position: relative;">
+                    <div class="card-body text-center pb-0">
+                        <div class="row">
+                            <div class="col text-lg">
+                                <a href="#" id="camera-label-link" class="badge-camera badge badge-lg badge-pill badge-info mr-2">Label: <span id="camera-label-text">unknown</span></a>
+                                <a href="#" id="camera-category-link" class="badge-camera badge badge-lg badge-pill badge-info">
+                                    Category: <span id="camera-category-text">split</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
-                    <div id="capture-camera" class="card-body text-center mb-0 py-0" style="display: none;">
-                        <div class="card-body text-center">
-                            <video playsinline autoplay></video>
-                            <canvas style="display: none;"></canvas>
-                        </div>
-                        <div class="card-body text-center mb-0 pt-0 pb-2">
-                            <button type="button" class="btn btn-lg pl-4 pr-4 btn-primary" id="capture-camera-button"><i class="fa fa-camera mr-2"></i>Classify</button>
-                        </div>
+                    <div class="card-body text-center">
+                        <video playsinline autoplay></video>
+                        <canvas style="display: none;"></canvas>
                     </div>
-                    <div id="inference-recording-message-body" class="card-body text-center pb-0 pt-0">
-                        <h2 id="inferencing-recording-data-message">Recording data</h2>
+                    <div class="card-body text-center pt-0 pb-2">
+                        <button type="button" class="btn btn-lg pl-4 pr-4 btn-primary" id="capture-camera-button"><i class="fa fa-camera mr-2"></i>Capture</button>
                     </div>
-                    <div class="card-body px-0 pb-0" id="inferencing-result" style="visibility: hidden">
-                        <table class="table align-items-center table-flush table-hover">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th scope="col" class="pl-4" style="width: 30px"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
+                    <div class="card-body text-center mb-4 pb-2">
+                        <div class="row">
+                            <div class="col text-sm">
+                                Images captured with current settings: <span id="images-capture-count">0</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -157,7 +153,7 @@
 
     <div class="row" id="inferencing-region">
         <div class="col text-center mt-4">
-            <a class="btn btn-secondary" href="index.html" id="switch-to-data-collection">Switch to data collection mode</a>
+            <a class="btn btn-secondary" href="classifier.html?from=camera">Switch to classification mode</a>
         </div>
     </div>
 
@@ -172,11 +168,19 @@
         </div>
     </footer>
 
+    <div style="height: 1px; overflow: hidden; opacity: 0.01;">
+        <select id="camera-category-select" class="ml-1">
+            <option value="split">Split automatically (80/20)</option>
+            <option value="training">Training</option>
+            <option value="testing">Testing</option>
+        </select>
+    </div>
+
     <script type="text/javascript" src="assets/axios.js"></script>
     <script type="text/javascript" src="assets/recorder.js"></script>
     <script type="text/javascript" src="build/client/bundle.js"></script>
     <script>
-        require('client/init').default('classifier');
+        require('client/init').default('data-collection-camera');
     </script>
 </body>
 </html>

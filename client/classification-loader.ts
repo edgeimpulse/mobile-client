@@ -91,6 +91,59 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         return classifier;
     }
 
+
+    async getProject(): Promise < {
+        id: number;
+    } > {
+        return new Promise((resolve, reject) => {
+            const x = new XMLHttpRequest();
+            x.open('GET', `${this._studioHost}/projects`);
+            x.onload = () => {
+                if (x.status !== 200) {
+                    reject('No projects found: ' + x.status + ' - ' + JSON.stringify(x.response));
+                } else {
+                    if (!x.response.success) {
+                        reject(x.response.error);
+                    } else {
+                        resolve(x.response.projects[0]);
+                    }
+                }
+            };
+            x.onerror = err => reject(err);
+            x.responseType = 'json';
+            x.setRequestHeader('x-api-key', this._apiKey);
+            x.send();
+        });
+    }
+
+    async getDevelopmentKeys(projectId: number): Promise <{
+        apiKey: string,
+        hmacKey: string
+    }> {
+        return new Promise((resolve, reject) => {
+            const x = new XMLHttpRequest();
+            x.open('GET', `${this._studioHost}/${projectId}/devkeys`);
+            x.onload = () => {
+                if (x.status !== 200) {
+                    reject('No development keys found: ' + x.status + ' - ' + JSON.stringify(x.response));
+                } else {
+                    if (!x.response.success) {
+                        reject(x.response.error);
+                    } else {
+                        resolve({
+                            apiKey: x.response.apiKey,
+                            hmacKey: x.response.hmacKey
+                        });
+                    }
+                }
+            };
+            x.onerror = err => reject(err);
+            x.responseType = 'json';
+            x.setRequestHeader('x-api-key', this._apiKey);
+            x.send();
+        });
+    }
+
     private async downloadDeployment(projectId: number): Promise < Blob > {
         return new Promise((resolve, reject) => {
             const x = new XMLHttpRequest();
@@ -240,30 +293,6 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
             setTimeout(() => {
                 reject('Did not authenticate with the websocket API within 10 seconds');
             }, 10000);
-        });
-    }
-
-    private async getProject(): Promise < {
-        id: number;
-    } > {
-        return new Promise((resolve, reject) => {
-            const x = new XMLHttpRequest();
-            x.open('GET', `${this._studioHost}/projects`);
-            x.onload = () => {
-                if (x.status !== 200) {
-                    reject('No projects found: ' + x.status + ' - ' + JSON.stringify(x.response));
-                } else {
-                    if (!x.response.success) {
-                        reject(x.response.error);
-                    } else {
-                        resolve(x.response.projects[0]);
-                    }
-                }
-            };
-            x.onerror = err => reject(err);
-            x.responseType = 'json';
-            x.setRequestHeader('x-api-key', this._apiKey);
-            x.send();
         });
     }
 
