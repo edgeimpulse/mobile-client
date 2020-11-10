@@ -4,6 +4,7 @@
   "description": "Mobile data acquisition and classification client for Edge Impulse",
   "private": true,
   "scripts": {
+    "start": "./node_modules/.bin/tsc-watch -p client --noClear & cd public && python -m SimpleHTTPServer 4820",
     "build": "./node_modules/.bin/tsc -p client",
     "lint": "./node_modules/.bin/tslint -p client/tsconfig.json",
     "watch": "./node_modules/.bin/tsc-watch -p client --noClear"

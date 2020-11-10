@@ -31,6 +31,7 @@ export class CameraDataCollectionClientViews {
     };
 
     private _sensors: ISensor[] = [];
+    private _numCaptures: number = 0;
     private _uploader: Uploader | undefined;
     private _hmacKey: string = '0';
 
@@ -115,9 +116,16 @@ export class CameraDataCollectionClientViews {
                     throw new Error('Attachment is supposed to present');
                 }
 
-                let category = this._elements.categoryText.textContent === 'split' ?
-                    await this.getCategoryFromBlob(sample.attachments[0].value) :
-                    this._elements.categoryText.textContent || 'training';
+                let category = this._elements.categoryText.textContent || 'training';
+                if (this._elements.categoryText.textContent === 'split') {
+                    if (this._numCaptures > 0) {
+                        category = await this.getCategoryFromBlob(sample.attachments[0].value);
+                    } else {
+                        category = 'training'
+                    }
+                }
+
+                this._numCaptures = this._numCaptures + 1
 
                 let details: SampleDetails = {
                     hmacKey: this._hmacKey,

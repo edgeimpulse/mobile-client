@@ -32,7 +32,7 @@ export const getIngestionApi = () => {
     if (ingestionApiParam) {
         return ingestionApiParam;
     } else if (envParam) {
-        return "https://ingestion." + envParam + ".test.edgeimpulse.com"
+        return "http://ingestion." + envParam + ".test.edgeimpulse.com"
     } else if (localStorageParam) {
         return localStorageParam
     } else {
@@ -56,7 +56,7 @@ export const getRemoteManagementEndpoint = () => {
     if (remoteMgmtParam) {
         return remoteMgmtParam;
     } else if (envParam) {
-        return "wss://remote-mgmt." + envParam + ".test.edgeimpulse.com"
+        return "ws://remote-mgmt." + envParam + ".test.edgeimpulse.com"
     } else if (localStorageParam) {
         return localStorageParam
     } else {
@@ -80,7 +80,7 @@ export const getStudioEndpoint = () => {
     if (studioParam) {
         return studioParam;
     } else if (envParam) {
-        return "https://studio." + envParam + ".test.edgeimpulse.com"
+        return "http://studio." + envParam + ".test.edgeimpulse.com"
     } else if (localStorageParam && localStorageParam.indexOf('wss://') === -1) {
         return localStorageParam
     } else {

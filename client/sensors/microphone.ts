@@ -60,7 +60,7 @@ export class MicrophoneSensor implements ISensor {
         return {
             name: 'Microphone',
             maxSampleLength: 1 * 60,
-            frequencies: [ 16000, 44100, 48000 ]
+            frequencies: [ 16000, 8000, 11000, 32000, 44100, 48000 ]
         };
     }
 
@@ -77,10 +77,6 @@ export class MicrophoneSensor implements ISensor {
             }
             let length = samplingOptions.length;
             let frequency = samplingOptions.frequency;
-
-            if (frequency !== 16000 && frequency !== 44100 && frequency !== 48000) {
-                return reject('Microphone only supports sampling at 16000Hz, 44100Hz and 48000Hz');
-            }
 
             if (!this._audioContext) {
                 return reject('No audio context');

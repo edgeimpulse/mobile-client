@@ -175,6 +175,7 @@
                             if (rate > sampleRate) {
                                 throw "downsampling rate show be smaller than original sample rate";
                             }
+
                             var sampleRateRatio = sampleRate / rate;
                             var newLength = Math.round(buffer.length / sampleRateRatio);
                             var result = new Float32Array(newLength);

@@ -194,10 +194,10 @@ export class ClassificationClientViews {
                     let iv;
                     if (prop.sensor !== 'camera') {
                         let timeLeft = sampleWindowLength;
-                        this._elements.inferencingTimeLeft.textContent = Math.floor(timeLeft / 1000) + 's';
+                        this._elements.inferencingTimeLeft.textContent = Math.round(timeLeft / 1000) + 's';
                         iv = setInterval(() => {
                             timeLeft -= 1000;
-                            this._elements.inferencingTimeLeft.textContent = Math.floor(timeLeft / 1000) + 's';
+                            this._elements.inferencingTimeLeft.textContent = Math.round(timeLeft / 1000) + 's';
                         }, 1000);
                     }
 
