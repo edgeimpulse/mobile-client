@@ -94,6 +94,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
 
     async getProject(): Promise < {
         id: number;
+        name: string;
     } > {
         return new Promise((resolve, reject) => {
             const x = new XMLHttpRequest();

@@ -56,6 +56,8 @@ export class CameraDataCollectionClientViews {
         }
 
         if (getApiKey()) {
+            storeApiKey(getApiKey());
+
             try {
                 this.switchView(this._views.loading);
 

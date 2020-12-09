@@ -3,8 +3,9 @@ import { ClassificationClientViews } from "./classification-views";
 import { getIngestionApi, storeIngestionApi, getRemoteManagementEndpoint,
     storeRemoteManagementEndpoint, storeStudioEndpoint, getStudioEndpoint } from "./settings";
 import { CameraDataCollectionClientViews } from "./camera-collection-views";
+import { DataCollectionKeywordClientViews } from "./collection-keyword";
 
-export default async function mobileClientLoader(mode: 'data-collection' | 'classifier') {
+export default async function mobileClientLoader(mode: 'data-collection' | 'classifier' | 'data-collection-camera' | 'data-collection-keyword') {
 
     storeIngestionApi(getIngestionApi());
     storeRemoteManagementEndpoint(getRemoteManagementEndpoint());
@@ -23,6 +24,11 @@ export default async function mobileClientLoader(mode: 'data-collection' | 'clas
     }
     else if (mode === 'data-collection-camera') {
         let client = new CameraDataCollectionClientViews();
+        await client.init();
+        (window as any).client = client;
+    }
+    else if (mode === 'data-collection-keyword') {
+        let client = new DataCollectionKeywordClientViews();
         await client.init();
         (window as any).client = client;
     }

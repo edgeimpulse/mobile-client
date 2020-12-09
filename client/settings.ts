@@ -2,6 +2,9 @@ const REMOTE_MANAGEMENT_ENDPOINT = 'wss://remote-mgmt.edgeimpulse.com';
 const INGESTION_API = 'https://ingestion.edgeimpulse.com';
 const STUDIO_ENDPOINT = 'https://studio.edgeimpulse.com';
 const LS_API_KEY = 'apiKey';
+const LS_KEYWORD = 'keyword';
+const LS_SAMPLE_LENGTH = 'sampleLength';
+const LS_FREQUENCY = 'frequency';
 const LS_DEVICE_ID_KEY = 'deviceId';
 const LS_INGESTION_API = 'ingestionApi';
 const LS_REMOTE_MANAGEMENT_ENDPOINT = 'remoteMgmtEndpoint';
@@ -17,6 +20,33 @@ export const getApiKey = () =>
 export const storeApiKey = (apiKey: string) => {
     console.log('storeApiKey', apiKey, window.location.search);
     localStorage.setItem(LS_API_KEY, apiKey);
+};
+
+export const getKeyword = () =>
+    new URLSearchParams(window.location.search).get('keyword') ||
+    localStorage.getItem(LS_KEYWORD) ||
+    '';
+export const storeKeyword = (keyword: string) => {
+    console.log('storeKeyword', keyword, window.location.search);
+    localStorage.setItem(LS_KEYWORD, keyword);
+};
+
+export const getFrequency = () =>
+    Number(new URLSearchParams(window.location.search).get('frequency')) ||
+    Number(localStorage.getItem(LS_FREQUENCY)) ||
+    NaN;
+export const storeFrequency = (frequency: number) => {
+    console.log('storeFrequency', frequency, window.location.search);
+    localStorage.setItem(LS_FREQUENCY, frequency.toString());
+};
+
+export const getSampleLength = () =>
+    Number(new URLSearchParams(window.location.search).get('sampleLength')) ||
+    Number(localStorage.getItem(LS_SAMPLE_LENGTH)) ||
+    NaN;
+export const storeSampleLength = (sampleLength: number) => {
+    console.log('storeSampleLength', sampleLength, window.location.search);
+    localStorage.setItem(LS_SAMPLE_LENGTH, sampleLength.toString());
 };
 
 export const getDeviceId = () =>
