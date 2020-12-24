@@ -195,7 +195,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
 
         let allData: string[] = [];
 
-        let p = new Promise((resolve, reject) => {
+        let p = new Promise<void>((resolve, reject) => {
             ws.onmessage = (msg) => {
                 try {
                     console.log('ws message', msg);

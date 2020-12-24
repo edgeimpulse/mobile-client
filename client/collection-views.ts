@@ -162,7 +162,7 @@ export class DataCollectionClientViews {
             this._elements.grantPermissionsBtn.textContent =
                 'Give access to the ' + sensor.getProperties().name;
 
-            return new Promise((resolve, reject) => {
+            return new Promise<ISensor>((resolve, reject) => {
                 let permissionTimeout = setTimeout(() => {
                     reject('User did not grant permissions within one minute');
                 }, 60 * 1000);
@@ -171,6 +171,10 @@ export class DataCollectionClientViews {
                     if (!sensor) return reject('Sensor is missing');
 
                     sensor.checkPermissions(true).then(async (result) => {
+                        if (!sensor) {
+                            return reject('Sensor is missing');
+                        }
+
                         if (result) {
                             if (sensorName !== 'Camera') {
                                 this.switchView(this._views.sampling);

@@ -12,6 +12,11 @@
         "allowJs": true,
         "types": [ ]
     },
+    "watchOptions": {
+        "watchFile": "useFsEvents",
+        "watchDirectory": "useFsEvents",
+        "fallbackPolling": "dynamicPriority"
+    },
     "include": [
         "../js-libs/almond.js",
         "../js-libs/cbor.js",

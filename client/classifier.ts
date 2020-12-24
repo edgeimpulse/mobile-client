@@ -36,7 +36,7 @@ export class EdgeImpulseClassifier {
     init() {
         if (this._initialized === true) return Promise.resolve();
 
-        return new Promise((resolve) => {
+        return new Promise<void>((resolve) => {
             this._module.onRuntimeInitialized = () => {
                 resolve();
                 this._initialized = true;
