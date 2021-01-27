@@ -32,7 +32,7 @@ export const dataMessage = (
 export const helloMessage = (settings: EdgeImpulseSettings) => {
     return {
         hello: {
-            version: 2,
+            version: 3,
             apiKey: settings.apiKey,
             deviceId: settings.device.deviceId,
             deviceType: settings.device.deviceType,
@@ -43,7 +43,8 @@ export const helloMessage = (settings: EdgeImpulseSettings) => {
                     maxSampleLengthS: s.maxSampleLength,
                     frequencies: s.frequencies
                 }
-            })
+            }),
+            supportsSnapshotStreaming: false
         }
     };
 };
