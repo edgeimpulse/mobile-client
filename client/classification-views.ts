@@ -61,6 +61,9 @@ export class ClassificationClientViews {
         if (window.location.search.indexOf('from=camera') > -1) {
             this._elements.switchToDataCollection.href = 'camera.html';
         }
+        if (window.location.search.indexOf('from=microphone') > -1) {
+            this._elements.switchToDataCollection.href = 'microphone.html';
+        }
 
         if (getApiKey()) {
             // persist keys now...

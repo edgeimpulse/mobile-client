@@ -4,8 +4,11 @@ import { getIngestionApi, storeIngestionApi, getRemoteManagementEndpoint,
     storeRemoteManagementEndpoint, storeStudioEndpoint, getStudioEndpoint } from "./settings";
 import { CameraDataCollectionClientViews } from "./camera-collection-views";
 import { DataCollectionKeywordClientViews } from "./collection-keyword";
+import { MicrophoneDataCollectionClientViews } from "./microphone-collection-views";
 
-export default async function mobileClientLoader(mode: 'data-collection' | 'classifier' | 'data-collection-camera' | 'data-collection-keyword') {
+export default async function mobileClientLoader(mode:
+    'data-collection' | 'classifier' | 'data-collection-camera' | 'data-collection-keyword' |
+    'data-collection-microphone') {
 
     storeIngestionApi(getIngestionApi());
     storeRemoteManagementEndpoint(getRemoteManagementEndpoint());
@@ -24,6 +27,11 @@ export default async function mobileClientLoader(mode: 'data-collection' | 'clas
     }
     else if (mode === 'data-collection-camera') {
         let client = new CameraDataCollectionClientViews();
+        await client.init();
+        (window as any).client = client;
+    }
+    else if (mode === 'data-collection-microphone') {
+        let client = new MicrophoneDataCollectionClientViews();
         await client.init();
         (window as any).client = client;
     }

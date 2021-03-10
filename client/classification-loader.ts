@@ -148,7 +148,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
     private async downloadDeployment(projectId: number): Promise < Blob > {
         return new Promise((resolve, reject) => {
             const x = new XMLHttpRequest();
-            x.open('GET', `${this._studioHost}/${projectId}/deployment/download?type=wasm`);
+            x.open('GET', `${this._studioHost}/${projectId}/deployment/download?type=wasm&modelType=float32`);
             x.onload = () => {
                 if (x.status !== 200) {
                     const reader = new FileReader();
@@ -183,45 +183,6 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
             throw new Error('Failed to start deployment: ' + impulseRes.status + ' - ' + impulseRes.statusText);
         }
 
-        let impulseData: {
-            success: true,
-            impulse: {
-                inputBlocks: { }[],
-                dspBlocks: { id: number, type: number }[],
-                learnBlocks: { id: number, type: number, primaryVersion: boolean }[]
-            }
-        } | { success: false, error: string } = impulseRes.data;
-        if (!impulseData.success) {
-            throw new Error(impulseData.error);
-        }
-
-        for (let l of impulseData.impulse.learnBlocks) {
-            if (typeof l.primaryVersion === 'boolean' && !l.primaryVersion) {
-                continue;
-            }
-
-            let setModelTypeRes = await axios({
-                url: `${this._studioHost}/${projectId}/training/keras/${l.id}`,
-                method: 'POST',
-                headers: {
-                    "x-api-key": this._apiKey,
-                    "Content-Type": "application/json",
-                },
-                data: {
-                    selectedModelType: 'float32'
-                }
-            });
-            if (setModelTypeRes.status !== 200) {
-                throw new Error('Failed to start deployment: ' +
-                    setModelTypeRes.status + ' - ' + setModelTypeRes.statusText);
-            }
-
-            let setModelTypeData: {  success: true } | { success: false, error: string } = setModelTypeRes.data;
-            if (!setModelTypeData.success) {
-                throw new Error(setModelTypeData.error);
-            }
-        }
-
         let jobRes = await axios({
             url: `${this._studioHost}/${projectId}/jobs/build-ondevice-model?type=wasm`,
             method: "POST",
@@ -230,7 +191,8 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
                 "Content-Type": "application/json"
             },
             data: {
-                engine: 'tflite'
+                engine: 'tflite',
+                modelType: 'float32'
             }
         });
         if (jobRes.status !== 200) {

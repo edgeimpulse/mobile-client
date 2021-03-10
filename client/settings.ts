@@ -49,8 +49,11 @@ export const storeSampleLength = (sampleLength: number) => {
     localStorage.setItem(LS_SAMPLE_LENGTH, sampleLength.toString());
 };
 
+const isMobilePhone = (navigator.maxTouchPoints || 'ontouchstart' in document.documentElement);
+const devicePrefix = isMobilePhone ? 'phone' : 'computer';
+
 export const getDeviceId = () =>
-    localStorage.getItem(LS_DEVICE_ID_KEY) || `phone_${getRandomString()}`;
+    localStorage.getItem(LS_DEVICE_ID_KEY) || `${devicePrefix}_${getRandomString()}`;
 export const storeDeviceId = (deviceId: string) => {
     localStorage.setItem(LS_DEVICE_ID_KEY, deviceId);
 };

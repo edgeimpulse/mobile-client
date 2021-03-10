@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Mobile client - Edge Impulse</title>
+    <title>Audio data collection - Edge Impulse</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=0" />
     <link rel="stylesheet" href="assets/argon-dashboard.css">
     <link rel="stylesheet" href="fontawesome-free/css/all.min.css">
@@ -36,7 +36,7 @@
                 <img src="assets/mark.svg">
             </div>
             <div class="col align-middle">
-                <h1 class="text-dark mb-0 border-left pl-4">Data collection</h1>
+                <h1 class="text-dark mb-0 border-left pl-4"><i class="fas fa-microphone mr-2"></i> Data collection</h1>
             </div>
         </div>
         <div class="row mt-4" id="loading-view">
@@ -52,6 +52,9 @@
                     </div>
                     <div class="card-body text-center">
                         <h2 id="loading-view-text">Loading...</h2>
+                    </div>
+                    <div class="card-body text-center pt-2 mb-2 text-monospace text-xs" id="build-progress" style="display: none">
+                        this._module.get_properties is not a function
                     </div>
                 </div>
             </div>
@@ -80,52 +83,6 @@
             </div>
         </div>
 
-        <div class="row mt-4" id="remote-mgmt-connecting" style="display: none">
-            <div class="col">
-                <div class="card shadow">
-                    <div class="card-body text-center card-icon mt-4">
-                        <div class="sk-folding-cube">
-                            <div class="sk-cube1 sk-cube"></div>
-                            <div class="sk-cube2 sk-cube"></div>
-                            <div class="sk-cube4 sk-cube"></div>
-                            <div class="sk-cube3 sk-cube"></div>
-                        </div>
-                    </div>
-                    <div class="card-body text-center">
-                        <h2>Connecting to Edge Impulse...</h2>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row mt-4" id="remote-mgmt-connected" style="display: none">
-            <div class="col">
-                <div class="card shadow">
-                    <div class="card-body text-center mt-4">
-                        <div class="col text-center">
-                            <i class="far fa-check-circle text-success" style="font-size: 10rem"></i>
-                        </div>
-                    </div>
-                    <div class="card-body text-center pb-0">
-                        <h2>Connected as <span id="connected-device-id"></span></h2>
-                    </div>
-                    <div class="card-body text-center pt-2 pb-0">
-                        You can collect data from this device from the
-                        <strong>Data acquisition</strong> page in
-                        the Edge Impulse studio.
-                    </div>
-                    <div class="card-body text-center mb-2 mt-4">
-                        <a href="camera.html" class="btn btn-outline-default">
-                            <i class="fas fa-camera-retro mr-2"></i> Collecting images?
-                        </a>
-                        <a href="microphone.html" class="btn btn-outline-default">
-                            <i class="fas fa-microphone mr-2"></i> Collecting audio?
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div class="row mt-4" id="remote-mgmt-failed" style="display: none">
             <div class="col">
                 <div class="card shadow">
@@ -135,50 +92,16 @@
                         </div>
                     </div>
                     <div class="card-body text-center pb-0">
-                        <h2>Not connected</h2>
+                        <h2>Failed to load</h2>
                     </div>
-                    <div class="card-body text-center pt-2">
-                        Refresh this page to reconnect to Edge Impulse
-                    </div>
-                    <div class="card-body text-center pt-2 mb-2 text-sm text-gray" id="connection-failed-message">
+                    <div class="card-body text-center pt-2 mb-2" id="connection-failed-message">
                         Failed to authenticate.
                     </div>
                 </div>
             </div>
         </div>
-        <div class="row mt-4" id="capture-camera" style="display: none; position: relative;">
-            <div class="col">
-                <div class="card shadow" style="position: relative;">
-                    <div class="card-body text-center">
-                        <video playsinline autoplay></video>
-                        <canvas style="display: none;"></canvas>
-                    </div>
-                    <div class="card-body text-center mb-4 pt-0 pb-2">
-                        <button type="button" class="btn btn-lg pl-4 pr-4 btn-primary" id="capture-camera-button"><i class="fa fa-camera mr-2"></i>Capture</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="row mt-4" id="sampling-in-progress" style="display: none; position: relative;">
-            <div class="col">
-                <div class="card shadow" style="position: relative;">
-                    <div id="sampling-circle" class="card-body text-center mt-5 mb-5">
-                        <div class="col text-center">
-                            <div class="sampling-circle"></div>
-                            <div class="sampling-seconds-left text-gray" id="sampling-time-left">27s</div>
-                        </div>
-                    </div>
-                    <div class="card-body text-center pb-0 pt-0">
-                        <h2 id="sampling-recording-data-message">Recording data</h2>
-                    </div>
-                    <div class="card-body text-center pt-2 mb-2">
-                        From <span id="sampling-recording-sensor">built-in microphone</span>...
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <div class="row mt-4" id="permission-view" style="display: none;">
+        <div class="row mt-4" id="permission-view" style="display: none">
             <div class="col">
                 <div class="card shadow">
                     <div class="card-body text-center card-icon">
@@ -189,17 +112,51 @@
                     <div class="card-body text-center pb-0">
                         <h2>Permission required</h2>
                     </div>
-                    <div class="card-body text-center mb-4">
+                    <div class="card-body text-center">
                         <button type="button" class="btn btn-primary" id="grant-permissions-button">Give access to the accelerometer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4" id="capture-camera" style="display: none; position: relative;">
+            <div class="col">
+                <div class="card shadow" style="position: relative;">
+                    <div class="card-body text-center pb-0">
+                        <div class="row">
+                            <div class="col text-lg">
+                                <a href="#" id="microphone-label-link" class="badge-camera badge badge-lg badge-pill badge-info mr-2">Label: <span id="microphone-label-text">unknown</span></a>
+                                <a href="#" id="microphone-length-link" class="badge-camera badge badge-lg badge-pill badge-info mr-2">Length: <span id="microphone-length-text">1</span>s.</a>
+                                <a href="#" id="microphone-category-link" class="badge-camera badge badge-lg badge-pill badge-info">
+                                    Category: <span id="microphone-category-text">split</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body text-center mt-4 mb-1">
+                        <button type="button" class="btn btn-lg pl-4 pr-4 btn-primary" id="microphone-capture-button"><i class="fas fa-microphone mr-2"></i>Start recording</button>
+                    </div>
+                    <div class="card-body text-center mb-4 pb-2 pt-2">
+                        <div class="row">
+                            <div class="col text-sm">
+                                Audio captured with current settings: <span id="microphone-capture-count">0s</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="sampling-circle" class="card-body text-center mt-1 mb-4 animate-opacity" style="opacity: 0">
+                        <div class="col text-center">
+                            <div class="sampling-circle no-spin"></div>
+                            <div class="sampling-seconds-left text-gray" id="sampling-time-left">...</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
+    <div class="row" id="inferencing-region">
         <div class="col text-center mt-4">
-            <a class="btn btn-secondary" href="classifier.html">Switch to classification mode</a>
+            <a class="btn btn-secondary" href="classifier.html?from=microphone">Switch to classification mode</a>
         </div>
     </div>
 
@@ -214,11 +171,19 @@
         </div>
     </footer>
 
+    <div style="height: 1px; overflow: hidden; opacity: 0.01;">
+        <select id="microphone-category-select" class="ml-1">
+            <option value="split">Split automatically (80/20)</option>
+            <option value="training">Training</option>
+            <option value="testing">Testing</option>
+        </select>
+    </div>
+
     <script type="text/javascript" src="assets/axios.js"></script>
     <script type="text/javascript" src="assets/recorder.js"></script>
     <script type="text/javascript" src="build/client/bundle.js"></script>
     <script>
-        require('client/init').default('data-collection');
+        require('client/init').default('data-collection-microphone');
     </script>
 </body>
 </html>
