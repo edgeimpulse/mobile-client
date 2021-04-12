@@ -5,6 +5,7 @@ import { MicrophoneSensor } from "./sensors/microphone";
 import { CameraSensor } from "./sensors/camera";
 import { ClassificationLoader } from "./classification-loader";
 import { EdgeImpulseClassifier } from "./classifier";
+import { Notify } from "./notify";
 
 export class ClassificationClientViews {
     private _views = {
@@ -29,13 +30,22 @@ export class ClassificationClientViews {
         inferenceCaptureBody: document.querySelector('#capture-camera') as HTMLElement,
         inferenceCaptureButton: document.querySelector('#capture-camera-button') as HTMLElement,
         inferenceRecordingMessageBody: document.querySelector('#inference-recording-message-body') as HTMLElement,
-        switchToDataCollection: document.querySelector('#switch-to-data-collection') as HTMLAnchorElement
+        switchToDataCollection: document.querySelector('#switch-to-data-collection') as HTMLAnchorElement,
+        cameraInner: document.querySelector('.capture-camera-inner') as HTMLElement,
+        cameraVideo: document.querySelector('.capture-camera-inner video') as HTMLVideoElement,
+        cameraCanvas: document.querySelector('.capture-camera-inner canvas') as HTMLCanvasElement,
     }
 
     private _sensors: ISensor[] = [];
     private _classifier: EdgeImpulseClassifier | undefined;
     private _firstInference = true;
     private _inferenceCount = 0;
+    private _isObjectDetection = false;
+    private _colors = [
+        '#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabed4',
+        '#469990', '#dcbeff', '#9A6324', '#fffac8', '#800000', '#aaffc3',
+    ];
+    private _labelToColor: { [k: string]: string } = { };
 
     async init() {
         storeDeviceId(getDeviceId());
@@ -225,7 +235,16 @@ export class ClassificationClientViews {
                             console.log('classification disable button');
                             this._elements.inferenceCaptureButton.innerHTML = '<i class="fa fa-camera mr-2"></i>Inferencing...';
                             this._elements.inferenceCaptureButton.classList.add('disabled');
-                            await this.sleep(100);
+
+                            if (this._isObjectDetection) {
+                                for (let bx of Array.from(this._elements.cameraInner.querySelectorAll('.bounding-box-container'))) {
+                                    bx.parentNode?.removeChild(bx);
+                                }
+                                await this.sleep(10);
+                            }
+                            else {
+                                await this.sleep(100);
+                            }
                         }
                         else {
                             // give some time to give the idea we're inferencing
@@ -241,77 +260,139 @@ export class ClassificationClientViews {
                             d = <number[]>data.values;
                         }
 
-                        console.log('raw data', d.length, d);
+                        // console.log('raw data', d.length, d);
 
                         console.time('inferencing');
-                        let res = this._classifier.classify(d, true);
+                        let res = this._classifier.classify(d, false);
                         console.timeEnd('inferencing');
 
-                        this._elements.inferencingResult.style.visibility = '';
+                        console.log('inference results', res);
 
-                        if (this._firstInference) {
+                        if (this._firstInference && res.results.length > 0) {
                             this._firstInference = false;
+                            this._isObjectDetection = typeof res.results[0].x === 'number';
 
-                            let thead = <HTMLElement>this._elements.inferencingResultTable.querySelector('thead tr');
-                            for (let e of res.results) {
-                                let th = document.createElement('th');
-                                th.scope = 'col';
-                                th.textContent = e.label;
-                                th.classList.add('px-0', 'text-center');
-                                thead.appendChild(th);
-                            }
-                            if (res.anomaly !== 0.0) {
-                                let th = document.createElement('th');
-                                th.scope = 'col';
-                                th.textContent = 'anomaly';
-                                th.classList.add('px-0', 'text-center');
-                                thead.appendChild(th);
-                            }
+                            if (!this._isObjectDetection) {
+                                this._elements.inferencingResult.style.visibility = '';
 
-                            if (thead.lastChild) {
-                                (<HTMLElement>thead.lastChild).classList.add('pr-4');
+                                let thead = <HTMLElement>
+                                    this._elements.inferencingResultTable.querySelector('thead tr');
+                                for (let e of res.results) {
+                                    let th = document.createElement('th');
+                                    th.scope = 'col';
+                                    th.textContent = e.label;
+                                    th.classList.add('px-0', 'text-center');
+                                    thead.appendChild(th);
+                                }
+                                if (res.anomaly !== 0.0) {
+                                    let th = document.createElement('th');
+                                    th.scope = 'col';
+                                    th.textContent = 'anomaly';
+                                    th.classList.add('px-0', 'text-center');
+                                    thead.appendChild(th);
+                                }
+
+                                if (thead.lastChild) {
+                                    (<HTMLElement>thead.lastChild).classList.add('pr-4');
+                                }
                             }
                         }
 
-                        let tbody = <HTMLElement>this._elements.inferencingResultTable.querySelector('tbody');
-                        let row = document.createElement('tr');
-                        row.innerHTML = '<td class="pl-4 pr-0">' + (++this._inferenceCount) + '</td>';
-                        row.classList.add('active');
+                        if (!this._isObjectDetection && res.results.length > 0) {
+                            let tbody = <HTMLElement>this._elements.inferencingResultTable.querySelector('tbody');
+                            let row = document.createElement('tr');
+                            row.innerHTML = '<td class="pl-4 pr-0">' + (++this._inferenceCount) + '</td>';
+                            row.classList.add('active');
 
-                        setTimeout(() => {
-                            row.classList.remove('active');
-                        }, 1000);
+                            setTimeout(() => {
+                                row.classList.remove('active');
+                            }, 1000);
 
-                        for (let e of res.results) {
-                            let td = document.createElement('td');
-                            td.textContent = e.value.toFixed(2);
-                            td.classList.add('px-0', 'text-center');
-                            if (Math.max(...res.results.map(v => v.value)) === e.value) {
-                                td.classList.add('font-weight-bold');
+                            for (let e of res.results) {
+                                let td = document.createElement('td');
+                                td.textContent = e.value.toFixed(2);
+                                td.classList.add('px-0', 'text-center');
+                                if (Math.max(...res.results.map(v => v.value)) === e.value) {
+                                    td.classList.add('font-weight-bold');
+                                }
+                                else {
+                                    td.classList.add('text-gray');
+                                }
+
+                                row.appendChild(td);
+                            }
+
+                            if (res.anomaly !== 0.0) {
+                                let td = document.createElement('td');
+                                td.textContent = res.anomaly.toFixed(2);
+                                td.classList.add('px-0', 'text-center');
+                                row.appendChild(td);
+                            }
+
+                            if (row.lastChild) {
+                                (<HTMLElement>row.lastChild).classList.add('pr-4');
+                            }
+
+                            if (tbody.childNodes.length === 0) {
+                                tbody.appendChild(row);
                             }
                             else {
-                                td.classList.add('text-gray');
+                                tbody.insertBefore(row, tbody.firstChild);
                             }
-
-                            row.appendChild(td);
-                        }
-
-                        if (res.anomaly !== 0.0) {
-                            let td = document.createElement('td');
-                            td.textContent = res.anomaly.toFixed(2);
-                            td.classList.add('px-0', 'text-center');
-                            row.appendChild(td);
-                        }
-
-                        if (row.lastChild) {
-                            (<HTMLElement>row.lastChild).classList.add('pr-4');
-                        }
-
-                        if (tbody.childNodes.length === 0) {
-                            tbody.appendChild(row);
                         }
                         else {
-                            tbody.insertBefore(row, tbody.firstChild);
+                            for (let bx of Array.from(this._elements.cameraInner.querySelectorAll('.bounding-box-container'))) {
+                                bx.parentNode?.removeChild(bx);
+                            }
+
+                            if (res.results.length === 0) {
+                                Notify.notify('', 'No objects found', 'top', 'center',
+                                    'fas fa-exclamation-triangle', 'success');
+                            }
+
+                            let factor = Number(this._elements.cameraCanvas.height) /
+                                Number(this._elements.cameraVideo.clientHeight);
+
+                            for (let b of res.results.filter(bb => bb.value >= 0.5)) {
+                                if (typeof b.x !== 'number' ||
+                                    typeof b.y !== 'number' ||
+                                    typeof b.width !== 'number' ||
+                                    typeof b.height !== 'number') {
+                                    continue;
+                                }
+                                let bb = {
+                                    x: b.x / factor,
+                                    y: b.y / factor,
+                                    width: b.width / factor,
+                                    height: b.height / factor,
+                                    label: b.label,
+                                    value: b.value
+                                };
+
+                                if (!this._labelToColor[bb.label]) {
+                                    this._labelToColor[bb.label] = this._colors[0];
+                                    this._colors.splice(0, 1);
+                                }
+
+                                let color = this._labelToColor[bb.label];
+
+                                let el = document.createElement('div');
+                                el.classList.add('bounding-box-container');
+                                el.style.position = 'absolute';
+                                el.style.border = 'solid 3px ' + color;
+                                el.style.width = (bb.width) + 'px';
+                                el.style.height = (bb.height) + 'px';
+                                el.style.left = (bb.x) + 'px';
+                                el.style.top = (bb.y) + 'px';
+
+                                let label = document.createElement('div');
+                                label.classList.add('bounding-box-label');
+                                label.style.background = color;
+                                label.textContent = bb.label + ' (' + bb.value.toFixed(2) + ')';
+                                el.appendChild(label);
+
+                                this._elements.cameraInner.appendChild(el);
+                            }
                         }
 
                         if (prop.sensor === 'camera') {

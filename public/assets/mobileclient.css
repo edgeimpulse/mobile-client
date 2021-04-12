@@ -514,6 +514,24 @@ video {
     transform: translateY(0);
 }
 
+.capture-camera-inner {
+    display: inline-block;
+    position: relative;
+    height: 100%;
+    object-fit: contain;
+}
+
+.bounding-box-label {
+    color: white;
+    color: white;
+    padding: 0.2rem 0.6rem;
+    margin: -33px -3px 0 -3px;
+    display: inline-block;
+    position: absolute;
+    font-size: 1rem;
+    right: 0;
+}
+
 /* end notify */
 
 /* animate.css */

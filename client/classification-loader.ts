@@ -209,43 +209,103 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
 
         let allData: string[] = [];
 
-        let p = new Promise<void>((resolve, reject) => {
-            ws.onmessage = (msg) => {
+        let p = new Promise<void>((resolve2, reject2) => {
+            let pingIv = setInterval(() => {
+                ws.send('2');
+            }, 25000);
+
+            let checkJobStatusIv = setInterval(async () => {
                 try {
-                    console.log('ws message', msg);
-                    let m = JSON.parse(msg.data.replace(/^[0-9]+/, ''));
-                    if (m[0] === 'job-data-' + jobId) {
-                        console.log('[WS] job data', m[1].data);
-                        allData.push(m[1].data);
-                        this.emit('buildProgress', m[1].data);
+                    let jobStatus = await axios({
+                        url: `${this._studioHost}/${projectId}/jobs/${jobId}/status`,
+                        method: "GET",
+                        headers: {
+                            "x-api-key": this._apiKey,
+                            "Content-Type": "application/json"
+                        }
+                    });
+                    if (jobStatus.status !== 200) {
+                        throw new Error('Failed to start deployment: ' + jobStatus.status + ' - ' +
+                            jobStatus.statusText);
                     }
-                    else if (m[0] === 'job-finished-' + jobId) {
-                        let success = m[1].success;
-                        console.log('[WS] job finished', success);
-                        this.emit('buildProgress', null);
-                        if (success) {
-                            resolve();
+
+                    let status: {
+                        success: true,
+                        id: number,
+                        job: {
+                            id: number,
+                            key: string,
+                            created?: Date,
+                            started?: Date,
+                            finished?: Date,
+                            finishedSuccessful?: boolean
+                        }
+                    } | { success: false, error: string } = jobStatus.data;
+
+                    if (!status.success) {
+                        // tslint:disable-next-line: no-unsafe-any
+                        throw new Error(status.error);
+                    }
+                    if (status.job.finished) {
+                        if (status.job.finishedSuccessful) {
+                            clearInterval(checkJobStatusIv);
+                            resolve2();
                         }
                         else {
-                            reject('Failed to build: ' + allData.join(''));
+                            clearInterval(checkJobStatusIv);
+                            reject2('Failed to build binary');
+                        }
+                    }
+                }
+                catch (ex2) {
+                    let ex = <Error>ex2;
+                    console.warn('Failed to check job status', ex.message || ex.toString());
+                }
+            }, 3000);
+
+            ws.onmessage = (msg) => {
+                let data = <string>msg.data;
+                try {
+                    let m = <any[]>JSON.parse(data.replace(/^[0-9]+/, ''));
+                    if (m[0] === 'job-data-' + jobId) {
+                        // tslint:disable-next-line: no-unsafe-any
+                        this.emit('buildProgress', m[1].data);
+                        allData.push(<string>(<any>m[1]).data);
+                    }
+                    else if (m[0] === 'job-finished-' + jobId) {
+                        let success = (<any>m[1]).success;
+                        this.emit('buildProgress', null);
+                        // console.log(BUILD_PREFIX, 'job finished', success);
+                        if (success) {
+                            clearInterval(checkJobStatusIv);
+                            resolve2();
+                        }
+                        else {
+                            clearInterval(checkJobStatusIv);
+                            reject2('Failed to build binary');
                         }
                     }
                 }
                 catch (ex) {
-                    console.log('[WS] Failed to parse', msg.data);
+                    // console.log(BUILD_PREFIX, 'Failed to parse', data);
                 }
             };
 
-            ws.onclose = () => {
-                reject('Websocket closed: ' + allData.join(''));
+            ws.onclose = async () => {
+                clearInterval(pingIv);
+                reject2('Websocket was closed');
             };
 
             setTimeout(() => {
-                reject('Building did not succeed within 30 seconds: ' + allData.join(''));
-            }, 30000);
+                reject2('Building did not succeed within 5 minutes: ' + allData.join(''));
+            }, 300000);
         });
 
-        p.then(() => ws.close()).catch(() => ws.close());
+        p.then(() => {
+            ws.close();
+        }).catch((err) => {
+            ws.close();
+        });
 
         return p;
     }

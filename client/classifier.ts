@@ -6,10 +6,16 @@ interface WasmRuntimeModule {
     run_classifier(dataPointer: number, dataLength: number, debug: boolean): {
         result: number;
         anomaly: number;
-        classification: {
-            size(): number;
-            get(index: number): { label: string, value: number };
-        }
+        size(): number;
+        get(index: number): {
+            label: string,
+            value: number,
+            width?: number,
+            height?: number,
+            x?: number,
+            y?: number,
+            delete: () => void
+        };
     };
     get_properties(): {
         sensor: number;
@@ -80,14 +86,18 @@ export class EdgeImpulseClassifier {
             throw new Error('Classification failed (err code: ' + ret.result + ')');
         }
 
-        const jsResult: { anomaly: number, results: { label: string, value: number }[] } = {
+        const jsResult: {
+            anomaly: number,
+            results: { label: string, value: number, width?: number, height?: number, x?: number, y?: number }[]
+        } = {
             anomaly: ret.anomaly,
             results: []
         };
 
-        for (let cx = 0; cx < ret.classification.size(); cx++) {
-            const c = ret.classification.get(cx);
-            jsResult.results.push({ label: c.label, value: c.value });
+        for (let cx = 0; cx < ret.size(); cx++) {
+            let c = ret.get(cx);
+            jsResult.results.push({ label: c.label, value: c.value, x: c.x, y: c.y, width: c.width, height: c.height });
+            c.delete();
         }
 
         return jsResult;
