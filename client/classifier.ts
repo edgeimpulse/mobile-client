@@ -28,6 +28,11 @@ interface WasmRuntimeModule {
     _malloc(bytes: number): number;
 }
 
+export type ClassificationResponse = {
+    anomaly: number;
+    results: { label: string, value: number, width?: number, height?: number, x?: number, y?: number }[];
+};
+
 export class EdgeImpulseClassifier {
     private _initialized = false;
     private _module: WasmRuntimeModule;
@@ -73,7 +78,7 @@ export class EdgeImpulseClassifier {
         };
     }
 
-    classify(rawData: number[], debug = false) {
+    classify(rawData: number[], debug = false): ClassificationResponse {
         if (!this._initialized) throw new Error('Module is not initialized');
 
         const obj = this._arrayToHeap(rawData);
@@ -86,10 +91,7 @@ export class EdgeImpulseClassifier {
             throw new Error('Classification failed (err code: ' + ret.result + ')');
         }
 
-        const jsResult: {
-            anomaly: number,
-            results: { label: string, value: number, width?: number, height?: number, x?: number, y?: number }[]
-        } = {
+        const jsResult: ClassificationResponse = {
             anomaly: ret.anomaly,
             results: []
         };

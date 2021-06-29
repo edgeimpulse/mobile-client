@@ -8,6 +8,7 @@ export interface ISamplingOptions {
     inputHeight?: number;
     inputChannels?: number;
     processing?: () => void;
+    continuousMode?: boolean;
 }
 
 export interface ISensor {

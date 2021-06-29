@@ -10,6 +10,18 @@ export class Uploader {
         this._apiKey = apiKey;
     }
 
+    private encodeLabel(header: string): string {
+        let encodedHeader;
+        try {
+            encodedHeader = encodeURIComponent(header);
+        }
+        catch (ex) {
+            encodedHeader = header;
+        }
+
+        return encodedHeader;
+    }
+
     async uploadSample(
         details: SampleDetails,
         data: ReturnType < typeof dataMessage >,
@@ -40,7 +52,7 @@ export class Uploader {
             xml.onerror = () => reject();
             xml.open("post", getIngestionApi() + details.path)
             xml.setRequestHeader("x-api-key", this._apiKey)
-            xml.setRequestHeader("x-file-name", details.label)
+            xml.setRequestHeader("x-file-name", this.encodeLabel(details.label))
             xml.send(formData);
         });
     }

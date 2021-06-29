@@ -131,7 +131,7 @@ export class MicrophoneSensor implements ISensor {
                         ],
                     });
                 }, undefined, frequency);
-            }, length + 100);
+            }, samplingOptions.continuousMode ? length : length + 100);
         });
-    };
+    }
 }
