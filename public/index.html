@@ -36,7 +36,7 @@
                 <img src="assets/mark.svg">
             </div>
             <div class="col align-middle">
-                <h1 class="text-dark mb-0 border-left pl-4">Data collection</h1>
+                <h1 class="text-dark mb-0 border-left pl-4">Classifier</h1>
             </div>
         </div>
         <div class="row mt-4" id="loading-view">
@@ -52,6 +52,9 @@
                     </div>
                     <div class="card-body text-center">
                         <h2 id="loading-view-text">Loading...</h2>
+                    </div>
+                    <div class="card-body text-center pt-2 mb-2 text-monospace text-xs" id="build-progress" style="display: none">
+                        this._module.get_properties is not a function
                     </div>
                 </div>
             </div>
@@ -80,52 +83,6 @@
             </div>
         </div>
 
-        <div class="row mt-4" id="remote-mgmt-connecting" style="display: none">
-            <div class="col">
-                <div class="card shadow">
-                    <div class="card-body text-center card-icon mt-4">
-                        <div class="sk-folding-cube">
-                            <div class="sk-cube1 sk-cube"></div>
-                            <div class="sk-cube2 sk-cube"></div>
-                            <div class="sk-cube4 sk-cube"></div>
-                            <div class="sk-cube3 sk-cube"></div>
-                        </div>
-                    </div>
-                    <div class="card-body text-center">
-                        <h2>Connecting to Edge Impulse...</h2>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row mt-4" id="remote-mgmt-connected" style="display: none">
-            <div class="col">
-                <div class="card shadow">
-                    <div class="card-body text-center mt-4">
-                        <div class="col text-center">
-                            <i class="far fa-check-circle text-success" style="font-size: 10rem"></i>
-                        </div>
-                    </div>
-                    <div class="card-body text-center pb-0">
-                        <h2>Connected as <span id="connected-device-id"></span></h2>
-                    </div>
-                    <div class="card-body text-center pt-2 pb-0">
-                        You can collect data from this device from the
-                        <strong>Data acquisition</strong> page in
-                        the Edge Impulse studio.
-                    </div>
-                    <div class="card-body text-center mb-2 mt-2" style="line-height: 3.5rem;">
-                        <a href="camera.html" class="btn btn-outline-default">
-                            <i class="fas fa-camera-retro mr-2"></i> Collecting images?
-                        </a>
-                        <a href="microphone.html" class="btn btn-outline-default">
-                            <i class="fas fa-microphone mr-2"></i> Collecting audio?
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div class="row mt-4" id="remote-mgmt-failed" style="display: none">
             <div class="col">
                 <div class="card shadow">
@@ -135,50 +92,16 @@
                         </div>
                     </div>
                     <div class="card-body text-center pb-0">
-                        <h2>Not connected</h2>
+                        <h2>Failed to load</h2>
                     </div>
-                    <div class="card-body text-center pt-2">
-                        Refresh this page to reconnect to Edge Impulse
-                    </div>
-                    <div class="card-body text-center pt-2 mb-2 text-sm text-gray" id="connection-failed-message">
+                    <div class="card-body text-center pt-2 mb-2" id="connection-failed-message">
                         Failed to authenticate.
                     </div>
                 </div>
             </div>
         </div>
-        <div class="row mt-4" id="capture-camera" style="display: none; position: relative;">
-            <div class="col">
-                <div class="card shadow" style="position: relative;">
-                    <div class="card-body text-center">
-                        <video playsinline autoplay></video>
-                        <canvas style="display: none;"></canvas>
-                    </div>
-                    <div class="card-body text-center mb-4 pt-0 pb-2">
-                        <button type="button" class="btn btn-lg pl-4 pr-4 btn-primary" id="capture-camera-button"><i class="fa fa-camera mr-2"></i>Capture</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="row mt-4" id="sampling-in-progress" style="display: none; position: relative;">
-            <div class="col">
-                <div class="card shadow" style="position: relative;">
-                    <div id="sampling-circle" class="card-body text-center mt-5 mb-5">
-                        <div class="col text-center">
-                            <div class="sampling-circle"></div>
-                            <div class="sampling-seconds-left text-gray" id="sampling-time-left">27s</div>
-                        </div>
-                    </div>
-                    <div class="card-body text-center pb-0 pt-0">
-                        <h2 id="sampling-recording-data-message">Recording data</h2>
-                    </div>
-                    <div class="card-body text-center pt-2 mb-2">
-                        From <span id="sampling-recording-sensor">built-in microphone</span>...
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <div class="row mt-4" id="permission-view" style="display: none;">
+        <div class="row mt-4" id="permission-view" style="display: none">
             <div class="col">
                 <div class="card shadow">
                     <div class="card-body text-center card-icon">
@@ -195,11 +118,42 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="row">
-        <div class="col text-center mt-4">
-            <a class="btn btn-secondary" href="classifier.html">Switch to classification mode</a>
+        <div class="row mt-4" id="inferencing-in-progress" style="display: none">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-body text-center mt-5 mb-5" id="inferencing-sampling-body">
+                        <div class="col text-center">
+                            <div class="sampling-circle"></div>
+                            <div class="sampling-seconds-left text-gray" id="inferencing-time-left">2s</div>
+                        </div>
+                    </div>
+                    <div id="capture-camera" class="card-body text-center mb-0 py-0" style="display: none;">
+                        <div class="card-body text-center">
+                            <div class="capture-camera-inner">
+                                <video playsinline autoplay></video>
+                                <canvas style="display: none;"></canvas>
+                            </div>
+                        </div>
+                        <div class="card-body text-center mb-0 pt-0 pb-2">
+                            <button type="button" class="btn btn-lg pl-4 pr-4 btn-primary" id="capture-camera-button"><i class="fa fa-camera mr-2"></i>Classify</button>
+                        </div>
+                    </div>
+                    <div id="inference-recording-message-body" class="card-body text-center pb-0 pt-0">
+                        <h2 id="inferencing-recording-data-message">Recording data</h2>
+                    </div>
+                    <div class="card-body px-0 pb-0" id="inferencing-result" style="visibility: hidden">
+                        <table class="table align-items-center table-flush table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th scope="col" class="pl-4" style="width: 30px"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -218,7 +172,7 @@
     <script type="text/javascript" src="assets/recorder.js"></script>
     <script type="text/javascript" src="build/client/bundle.js"></script>
     <script>
-        require('client/init').default('data-collection');
+        require('client/init').default('classifier');
     </script>
 </body>
 </html>
