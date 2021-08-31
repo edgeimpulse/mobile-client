@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/brianweet/edge-impulse-example-browser-device#readme",
   "dependencies": {
-    "axios": "0.19.2",
+    "axios": "0.21.1",
     "tslint": "6.1.0"
   },
   "devDependencies": {
