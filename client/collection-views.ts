@@ -4,6 +4,7 @@ import { ISensor } from "./sensors/isensor";
 import { AccelerometerSensor } from "./sensors/accelerometer";
 import { MicrophoneSensor } from "./sensors/microphone";
 import { CameraSensor } from "./sensors/camera";
+import { Positional9DOFSensor } from "./sensors/9axisIMU";
 
 export class DataCollectionClientViews {
     private _views = {
@@ -47,6 +48,12 @@ export class DataCollectionClientViews {
         if (await camera.hasSensor()) {
             console.log('has camera');
             this._sensors.push(camera);
+        }
+
+        const imu9DOF = new Positional9DOFSensor();
+        if (await imu9DOF.hasSensor()) {
+            console.log('has 9-axis positional sensors');
+            this._sensors.push(imu9DOF);
         }
 
         if (getApiKey()) {

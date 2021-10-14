@@ -5,7 +5,8 @@ const MAX_IMAGE_WIDTH = 640;
 
 export class CameraSensor implements ISensor {
 
-    private _stream: MediaStream | undefined
+    private _stream: MediaStream | undefined;
+
     constructor() {
         /* noop */
     }
@@ -75,7 +76,9 @@ export class CameraSensor implements ISensor {
         canvas.height = imageHeight;
 
         return new Promise<Sample>((resolve, reject) => {
-            captureButton.onclick = () => {
+            captureButton.onclick = async () => {
+                if (this.isPaused()) return;
+
                 captureButton.classList.add('disabled');
 
                 this.takeSnapshot(samplingOptions).then(resolve).catch(reject);
@@ -162,5 +165,32 @@ export class CameraSensor implements ISensor {
                 canvas.toBlob(saveFrame, 'image/jpeg', 0.95);
             }
         });
+    }
+
+    pause() {
+        const video = document.querySelector('video');
+        if (!video) {
+            return;
+        }
+
+        video.pause();
+    }
+
+    async resume() {
+        const video = document.querySelector('video');
+        if (!video) {
+            return;
+        }
+
+        await video.play();
+    }
+
+    isPaused() {
+        const video = document.querySelector('video');
+        if (!video) {
+            return;
+        }
+
+        return video.paused;
     }
 }

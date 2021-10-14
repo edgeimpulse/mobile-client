@@ -2,6 +2,7 @@ import { getApiKey, getDeviceId, getFrequency, getKeyword, getSampleLength, getS
     storeApiKey, storeDeviceId, storeFrequency, storeKeyword, storeSampleLength } from "./settings";
 import { ISensor } from "./sensors/isensor";
 import { AccelerometerSensor } from "./sensors/accelerometer";
+import { Positional9DOFSensor } from "./sensors/9axisIMU";
 import { MicrophoneSensor } from "./sensors/microphone";
 import { CameraSensor } from "./sensors/camera";
 import { ClassificationLoader } from "./classification-loader";
@@ -66,6 +67,12 @@ export class DataCollectionKeywordClientViews {
         if (await accelerometer.hasSensor()) {
             console.log('has accelerometer');
             this._sensors.push(accelerometer);
+        }
+
+        const imu9DOF = new Positional9DOFSensor();
+        if (await imu9DOF.hasSensor()) {
+            console.log('has 9-axis positional sensors');
+            this._sensors.push(imu9DOF);
         }
 
         const microphone = new MicrophoneSensor();

@@ -6,7 +6,7 @@
     <title>Audio data collection - Edge Impulse</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=0" />
     <link rel="stylesheet" href="assets/argon-dashboard.css">
-    <link rel="stylesheet" href="fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="fontawesome-pro-5.15.1-web/css/all.min.css">
     <link rel="stylesheet" href="assets/mobileclient.css">
     <!-- generics -->
     <link rel="icon" href="assets/favicon-color/favicon-32.png" sizes="32x32">
@@ -113,7 +113,7 @@
                         <h2>Permission required</h2>
                     </div>
                     <div class="card-body text-center">
-                        <button type="button" class="btn btn-primary" id="grant-permissions-button">Give access to the accelerometer</button>
+                        <button type="button" class="btn btn-primary" id="grant-permissions-button">Give access to the microphone</button>
                     </div>
                 </div>
             </div>
@@ -125,21 +125,21 @@
                     <div class="card-body text-center pb-0">
                         <div class="row">
                             <div class="col text-lg">
-                                <a href="#" id="microphone-label-link" class="badge-camera badge badge-lg badge-pill badge-info mr-2">Label: <span id="microphone-label-text">unknown</span></a>
-                                <a href="#" id="microphone-length-link" class="badge-camera badge badge-lg badge-pill badge-info mr-2">Length: <span id="microphone-length-text">1</span>s.</a>
-                                <a href="#" id="microphone-category-link" class="badge-camera badge badge-lg badge-pill badge-info">
-                                    Category: <span id="microphone-category-text">split</span>
+                                <a href="#" id="time-series-label-link" class="badge-camera badge badge-lg badge-pill badge-info mr-2">Label: <span id="time-series-label-text">unknown</span></a>
+                                <a href="#" id="time-series-length-link" class="badge-camera badge badge-lg badge-pill badge-info mr-2">Length: <span id="time-series-length-text">1</span>s.</a>
+                                <a href="#" id="time-series-category-link" class="badge-camera badge badge-lg badge-pill badge-info">
+                                    Category: <span id="time-series-category-text">split</span>
                                 </a>
                             </div>
                         </div>
                     </div>
                     <div class="card-body text-center mt-4 mb-1">
-                        <button type="button" class="btn btn-lg pl-4 pr-4 btn-primary" id="microphone-capture-button"><i class="fas fa-microphone mr-2"></i>Start recording</button>
+                        <button type="button" class="btn btn-lg pl-4 pr-4 btn-primary" id="time-series-capture-button"><i class="fas fa-microphone mr-2"></i>Start recording</button>
                     </div>
                     <div class="card-body text-center mb-4 pb-2 pt-2">
                         <div class="row">
                             <div class="col text-sm">
-                                Audio captured with current settings: <span id="microphone-capture-count">0s</span>
+                                Audio captured with current settings: <span id="time-series-capture-count">0s</span>
                             </div>
                         </div>
                     </div>
@@ -172,7 +172,7 @@
     </footer>
 
     <div style="height: 1px; overflow: hidden; opacity: 0.01;">
-        <select id="microphone-category-select" class="ml-1">
+        <select id="time-series-category-select" class="ml-1">
             <option value="split">Split automatically (80/20)</option>
             <option value="training">Training</option>
             <option value="testing">Testing</option>

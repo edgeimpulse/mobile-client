@@ -65,6 +65,8 @@ export class EdgeImpulseClassifier {
             sensor = "microphone";
         } else if (ret.sensor === 3) {
             sensor = "camera";
+        } else if (ret.sensor === 4) {
+            sensor = "positional";
         } else {
             throw new Error('Unknown sensor.')
         }

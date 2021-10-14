@@ -4,11 +4,11 @@ import { getIngestionApi, storeIngestionApi, getRemoteManagementEndpoint,
     storeRemoteManagementEndpoint, storeStudioEndpoint, getStudioEndpoint } from "./settings";
 import { CameraDataCollectionClientViews } from "./camera-collection-views";
 import { DataCollectionKeywordClientViews } from "./collection-keyword";
-import { MicrophoneDataCollectionClientViews } from "./microphone-collection-views";
+import { TimeSeriesDataCollectionClientViews } from "./time-series-collection-views";
 
 export default async function mobileClientLoader(mode:
     'data-collection' | 'classifier' | 'data-collection-camera' | 'data-collection-keyword' |
-    'data-collection-microphone') {
+    'data-collection-microphone' | 'data-collection-accelerometer') {
 
     storeIngestionApi(getIngestionApi());
     storeRemoteManagementEndpoint(getRemoteManagementEndpoint());
@@ -31,8 +31,13 @@ export default async function mobileClientLoader(mode:
         (window as any).client = client;
     }
     else if (mode === 'data-collection-microphone') {
-        let client = new MicrophoneDataCollectionClientViews();
-        await client.init();
+        let client = new TimeSeriesDataCollectionClientViews();
+        await client.init('microphone');
+        (window as any).client = client;
+    }
+    else if (mode === 'data-collection-accelerometer') {
+        let client = new TimeSeriesDataCollectionClientViews();
+        await client.init('accelerometer');
         (window as any).client = client;
     }
     else if (mode === 'data-collection-keyword') {

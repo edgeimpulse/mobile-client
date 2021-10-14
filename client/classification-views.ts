@@ -3,10 +3,10 @@ import { ISensor, ISamplingOptions } from "./sensors/isensor";
 import { AccelerometerSensor } from "./sensors/accelerometer";
 import { MicrophoneSensor } from "./sensors/microphone";
 import { CameraSensor } from "./sensors/camera";
+import { Positional9DOFSensor } from "./sensors/9axisIMU";
 import { ClassificationLoader } from "./classification-loader";
 import { ClassificationResponse, EdgeImpulseClassifier } from "./classifier";
 import { Notify } from "./notify";
-import { ClassificationResult } from "typescript";
 import { MovingAverageFilter } from "./moving-average-filter";
 
 export class ClassificationClientViews {
@@ -70,11 +70,20 @@ export class ClassificationClientViews {
             this._sensors.push(camera);
         }
 
+        const imu9DOF = new Positional9DOFSensor();
+        if (await imu9DOF.hasSensor()) {
+            console.log('has 9-axis positional sensors');
+            this._sensors.push(imu9DOF);
+        }
+
         if (window.location.search.indexOf('from=camera') > -1) {
             this._elements.switchToDataCollection.href = 'camera.html';
         }
         if (window.location.search.indexOf('from=microphone') > -1) {
             this._elements.switchToDataCollection.href = 'microphone.html';
+        }
+        if (window.location.search.indexOf('from=accelerometer') > -1) {
+            this._elements.switchToDataCollection.href = 'accelerometer.html';
         }
 
         if (getApiKey()) {
@@ -115,6 +124,9 @@ export class ClassificationClientViews {
                     else if (props.sensor === 'camera' && !camera.hasSensor()) {
                         throw new Error('Model expects camera, but device has none');
                     }
+                    else if (props.sensor === 'positional' && !imu9DOF.hasSensor()) {
+                        throw new Error('Model expects positional sensors, but device has none');
+                    }
 
                     if (props.sensor === 'accelerometer') {
                         this._elements.grantPermission.textContent = 'Give access to the accelerometer';
@@ -124,6 +136,9 @@ export class ClassificationClientViews {
                     }
                     else if (props.sensor === 'camera') {
                         this._elements.grantPermission.textContent = 'Give access to the camera';
+                    }
+                    else if (props.sensor === 'positional') {
+                        this._elements.grantPermission.textContent = 'Give access to the motion sensors';
                     }
                     else {
                         throw new Error('Unexpected sensor: ' + props.sensor);
@@ -369,6 +384,8 @@ export class ClassificationClientViews {
                             this._elements.inferenceCaptureButton.innerHTML = '<i class="fa fa-camera mr-2"></i>Inferencing...';
                             this._elements.inferenceCaptureButton.classList.add('disabled');
 
+                            (<CameraSensor>sensor).pause();
+
                             if (this._isObjectDetection) {
                                 for (let bx of Array.from(this._elements.cameraInner.querySelectorAll('.bounding-box-container'))) {
                                     bx.parentNode?.removeChild(bx);
@@ -407,8 +424,32 @@ export class ClassificationClientViews {
                             console.log('classification enable button again');
                             this._elements.inferenceCaptureBody.style.display = 'initial'
                             this._elements.inferenceRecordingMessageBody.style.display = 'none'
-                            this._elements.inferenceCaptureButton.innerHTML = '<i class="fa fa-camera mr-2"></i>Classify';
                             this._elements.inferenceCaptureButton.classList.remove('disabled');
+
+                            this._elements.inferenceCaptureButton.innerHTML = '<i class="fa fa-camera mr-2"></i>Next photo';
+
+                            let onClick = async (ev: MouseEvent) => {
+                                ev.preventDefault();
+                                ev.stopImmediatePropagation();
+
+                                this._elements.inferenceCaptureButton.removeEventListener('click', onClick);
+
+                                let cameraSensor = (<CameraSensor>sensor);
+
+                                if (cameraSensor.isPaused()) {
+                                    for (let bx of Array.from(
+                                        this._elements.cameraInner.querySelectorAll('.bounding-box-container'))) {
+
+                                        bx.parentNode?.removeChild(bx);
+                                    }
+
+                                    this._elements.inferenceCaptureButton.innerHTML = '<i class="fa fa-camera mr-2"></i>Classify';
+                                    await cameraSensor.resume();
+                                }
+                            };
+
+                            this._elements.inferenceCaptureButton.addEventListener('click', onClick);
+
                             // immediately sample next window
                             setTimeout(sampleNextWindow, 0);
                         }

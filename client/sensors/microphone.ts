@@ -34,7 +34,7 @@ export class MicrophoneSensor implements ISensor {
 
     async checkPermissions(fromButton: boolean) {
         if (!this.hasSensor()) {
-            throw new Error('Accelerometer not present on this device');
+            throw new Error('Microphone not present on this device');
         }
 
         if (this._recorder) {
