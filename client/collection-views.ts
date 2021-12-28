@@ -70,7 +70,7 @@ export class DataCollectionClientViews {
                             name: p.name,
                             frequencies: p.frequencies,
                             maxSampleLength: p.maxSampleLength
-                        }
+                        };
                     }),
                     deviceType: 'MOBILE_CLIENT'
                 }
@@ -149,7 +149,8 @@ export class DataCollectionClientViews {
 
         if (sensorName !== 'Camera') {
             this._views.sampling.style.display = 'initial';
-        } else {
+        }
+        else {
             this._views.sampling.style.display = 'none';
         }
 
@@ -159,7 +160,8 @@ export class DataCollectionClientViews {
                 this._elements.samplingRecordingStatus.textContent = 'Starting in 2 seconds';
                 this._elements.samplingTimeLeft.textContent = 'Waiting...';
                 await this.sleep(2000);
-            } else {
+            }
+            else {
                 this.switchView(this._views.capture);
             }
             return sensor;
@@ -188,18 +190,19 @@ export class DataCollectionClientViews {
                                 this._elements.samplingRecordingStatus.textContent = 'Starting in 2 seconds';
                                 this._elements.samplingTimeLeft.textContent = 'Waiting...';
                                 await this.sleep(2000);
-                            } else {
+                            }
+                            else {
                                 this.switchView(this._views.capture);
                             }
                             resolve(sensor);
                         }
                         else {
-                            reject('User has rejected accelerometer permissions')
+                            reject('User has rejected accelerometer permissions');
                         }
                     }).catch(reject);
 
                     clearInterval(permissionTimeout);
-                }
+                };
             });
         }
     }

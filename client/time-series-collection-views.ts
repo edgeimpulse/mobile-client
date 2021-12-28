@@ -7,6 +7,7 @@ import { dataMessage } from "./messages";
 import { Notify } from "./notify";
 import { MicrophoneSensor } from "./sensors/microphone";
 import { AccelerometerSensor } from "./sensors/accelerometer";
+import { getErrorMsg } from "./utils";
 
 export class TimeSeriesDataCollectionClientViews {
     private _views = {
@@ -125,7 +126,9 @@ export class TimeSeriesDataCollectionClientViews {
             }
             catch (ex) {
                 console.error('Failed to load', ex);
-                this._elements.connectionFailedMessage.textContent = (ex.message || ex.toString());
+                if (ex instanceof Error) {
+                    this._elements.connectionFailedMessage.textContent = (ex.message || ex.toString());
+                }
 
                 this.switchView(this._views.connectionFailed);
             }
@@ -187,8 +190,9 @@ export class TimeSeriesDataCollectionClientViews {
                 if (this._elements.categoryText.textContent === 'split') {
                     if (this._numCaptures > 0) {
                         category = await this.getCategoryFromString(JSON.stringify(sample.values));
-                    } else {
-                        category = 'training'
+                    }
+                    else {
+                        category = 'training';
                     }
                 }
 
@@ -213,7 +217,7 @@ export class TimeSeriesDataCollectionClientViews {
                                 name: p.name,
                                 frequencies: p.frequencies,
                                 maxSampleLength: p.maxSampleLength
-                            }
+                            };
                         }),
                         deviceType: 'MOBILE_CLIENT'
                     }
@@ -221,9 +225,10 @@ export class TimeSeriesDataCollectionClientViews {
 
                 console.log('details', details, 'data', data, 'sample', sample);
 
-                // tslint:disable-next-line: no-floating-promises
+                // eslint-disable-next-line @typescript-eslint/no-floating-promises
                 (async () => {
                     if (!this._uploader) return;
+                    /* eslint-disable @typescript-eslint/no-explicit-any */
                     try {
                         let filename = await this._uploader.uploadSample(details, data, sample);
                         (<any>$).notifyClose();
@@ -232,7 +237,7 @@ export class TimeSeriesDataCollectionClientViews {
                     }
                     catch (ex) {
                         (<any>$).notifyClose();
-                        Notify.notify('Failed to upload', ex.message || ex.toString(), 'top', 'center',
+                        Notify.notify('Failed to upload', getErrorMsg(ex), 'top', 'center',
                             'far fa-times-circle', 'danger');
                     }
                 })();
@@ -247,7 +252,7 @@ export class TimeSeriesDataCollectionClientViews {
                 }
             }
             catch (ex) {
-                alert('Failed to upload: ' + (ex.message || ex.toString()));
+                alert('Failed to upload: ' + getErrorMsg(ex));
             }
             finally {
                 this._elements.recordButton.innerHTML = origHtml;
@@ -259,12 +264,12 @@ export class TimeSeriesDataCollectionClientViews {
                     clearInterval(samplingInterval);
                 }
             }
-        }
+        };
 
-        this._elements.labelLink.onclick = ev => {
+        this._elements.labelLink.onclick = async (ev) => {
             ev.preventDefault();
-
-            let v = prompt('Enter a label', this._elements.labelText.textContent || '');
+            let v = await Notify.prompt('Enter a label', '', 'Set label',
+                this._elements.labelText.textContent || '', 'info', 'info');
             if (v) {
                 if (v && this._elements.labelText.textContent !== v) {
                     this._numCaptures = 0;
@@ -277,10 +282,10 @@ export class TimeSeriesDataCollectionClientViews {
             }
         };
 
-        this._elements.lengthLink.onclick = ev => {
+        this._elements.lengthLink.onclick = async (ev) => {
             ev.preventDefault();
-
-            let v = prompt('Set length in seconds', this._elements.lengthText.textContent || '');
+            let v = await Notify.prompt('Set length in seconds', '', 'Set length',
+                this._elements.lengthText.textContent || '', 'info', 'info');
             if (v && !isNaN(Number(v))) {
                 if (v && this._elements.lengthText.textContent !== v) {
                     this._numCaptures = 0;
@@ -347,7 +352,7 @@ export class TimeSeriesDataCollectionClientViews {
                 }
             }
             else {
-                alert(`User has rejected ${this._activeSensor} permissions`)
+                alert(`User has rejected ${this._activeSensor} permissions`);
             }
         }).catch(err => {
             console.error(err);

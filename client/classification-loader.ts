@@ -1,10 +1,19 @@
 import { Emitter } from "./typed-event-emitter";
 import { EdgeImpulseClassifier } from "./classifier";
 import { AxiosStatic } from '../node_modules/axios';
+import { getErrorMsg } from './utils';
+import { WasmRuntimeModule } from './classifier';
 
-declare var axios: AxiosStatic;
+declare let axios: AxiosStatic;
 
-export class ClassificationLoader extends Emitter<{ status: [string]; buildProgress: [string | null]; }> {
+declare global {
+    interface Window {
+        WasmLoader: (wasmUrl: string) => WasmRuntimeModule;
+        blb: Blob;
+    }
+}
+
+export class ClassificationLoader extends Emitter<{ status: [string]; buildProgress: [string | null] }> {
     private _studioHost: string;
     private _wsHost: string;
     private _apiKey: string;
@@ -33,7 +42,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
             blob = await this.downloadDeployment(projectId);
         }
         catch (ex) {
-            let m = typeof ex === 'string' ? ex : (ex.message || ex.toString());
+            let m = getErrorMsg(ex);
             if (m.indexOf('No deployment yet') === -1) {
                 throw ex;
             }
@@ -81,7 +90,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         script.innerHTML = loaderText;
         window.document.body.append(script);
 
-        const module = (window as any).WasmLoader(wasmUrl);
+        const module = window.WasmLoader(wasmUrl);
         this.emit('status', 'Loaded WASM module');
 
         const classifier = new EdgeImpulseClassifier(module);
@@ -102,10 +111,12 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
             x.onload = () => {
                 if (x.status !== 200) {
                     reject('No projects found: ' + x.status + ' - ' + JSON.stringify(x.response));
-                } else {
+                }
+                else {
                     if (!x.response.success) {
                         reject(x.response.error);
-                    } else {
+                    }
+                    else {
                         resolve(x.response.projects[0]);
                     }
                 }
@@ -118,8 +129,8 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
     }
 
     async getDevelopmentKeys(projectId: number): Promise <{
-        apiKey: string,
-        hmacKey: string
+        apiKey: string;
+        hmacKey: string;
     }> {
         return new Promise((resolve, reject) => {
             const x = new XMLHttpRequest();
@@ -127,10 +138,12 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
             x.onload = () => {
                 if (x.status !== 200) {
                     reject('No development keys found: ' + x.status + ' - ' + JSON.stringify(x.response));
-                } else {
+                }
+                else {
                     if (!x.response.success) {
                         reject(x.response.error);
-                    } else {
+                    }
+                    else {
                         resolve({
                             apiKey: x.response.apiKey,
                             hmacKey: x.response.hmacKey
@@ -156,7 +169,8 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
                         reject('No deployment yet');
                     };
                     reader.readAsText(x.response);
-                } else {
+                }
+                else {
                     resolve(x.response);
                 }
             };
@@ -199,7 +213,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
             throw new Error('Failed to start deployment: ' + jobRes.status + ' - ' + jobRes.statusText);
         }
 
-        let jobData: { success: true, id: number } | { success: false, error: string } = jobRes.data;
+        let jobData: { success: true; id: number } | { success: false; error: string } = jobRes.data;
         if (!jobData.success) {
             throw new Error(jobData.error);
         }
@@ -230,20 +244,20 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
                     }
 
                     let status: {
-                        success: true,
-                        id: number,
+                        success: true;
+                        id: number;
                         job: {
-                            id: number,
-                            key: string,
-                            created?: Date,
-                            started?: Date,
-                            finished?: Date,
-                            finishedSuccessful?: boolean
-                        }
-                    } | { success: false, error: string } = jobStatus.data;
+                            id: number;
+                            key: string;
+                            created?: Date;
+                            started?: Date;
+                            finished?: Date;
+                            finishedSuccessful?: boolean;
+                        };
+                    } | { success: false; error: string } = jobStatus.data;
 
                     if (!status.success) {
-                        // tslint:disable-next-line: no-unsafe-any
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         throw new Error(status.error);
                     }
                     if (status.job.finished) {
@@ -266,9 +280,9 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
             ws.onmessage = (msg) => {
                 let data = <string>msg.data;
                 try {
+                    /* eslint-disable @typescript-eslint/no-explicit-any */
                     let m = <any[]>JSON.parse(data.replace(/^[0-9]+/, ''));
                     if (m[0] === 'job-data-' + jobId) {
-                        // tslint:disable-next-line: no-unsafe-any
                         this.emit('buildProgress', m[1].data);
                         allData.push(<string>(<any>m[1]).data);
                     }
@@ -324,12 +338,12 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         }
 
         let tokenData: {
-            success: true,
+            success: true;
             token: {
-                socketToken: string,
-                expires: Date
-            }
-        } | { success: false, error: string } = tokenRes.data;
+                socketToken: string;
+                expires: Date;
+            };
+        } | { success: false; error: string } = tokenRes.data;
 
         if (!tokenData.success) {
             throw new Error(tokenData.error);
@@ -371,11 +385,11 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         });
     }
 
-    private async unzip(blob: Blob): Promise<{ filename: string; blob: Blob; } []> {
-        const ret: { filename: string; blob: Blob; } [] = [];
+    private async unzip(blob: Blob): Promise<{ filename: string; blob: Blob } []> {
+        const ret: { filename: string; blob: Blob } [] = [];
 
         return new Promise((resolve, reject) => {
-            (<any>window).blb = blob;
+            window.blb = blob;
 
             (<any>window).zip.createReader(new (<any>window).zip.BlobReader(blob), (reader: any) => {
                 reader.getEntries((entries: any) => {

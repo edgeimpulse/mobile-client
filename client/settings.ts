@@ -59,23 +59,27 @@ export const storeDeviceId = (deviceId: string) => {
 };
 
 export const getIngestionApi = () => {
-    let ingestionApiParam = new URLSearchParams(window.location.search).get('ingestionApi')
-    let envParam = new URLSearchParams(window.location.search).get('env')
-    let localStorageParam = localStorage.getItem(LS_INGESTION_API)
+    let ingestionApiParam = new URLSearchParams(window.location.search).get('ingestionApi');
+    let envParam = new URLSearchParams(window.location.search).get('env');
+    let localStorageParam = localStorage.getItem(LS_INGESTION_API);
     if (ingestionApiParam) {
         return ingestionApiParam;
-    } else if (envParam) {
-        return "http://ingestion." + envParam + ".test.edgeimpulse.com"
-    } else if (localStorageParam) {
-        return localStorageParam
-    } else {
+    }
+    else if (envParam) {
+        return "http://ingestion." + envParam + ".test.edgeimpulse.com";
+    }
+    else if (localStorageParam) {
+        return localStorageParam;
+    }
+    else {
         if (window.location.host === 'smartphone.acc2.edgeimpulse.com') {
-            return INGESTION_API.replace('edgeimpulse.com', 'acc2.edgeimpulse.com')
-        } else {
-            return INGESTION_API
+            return INGESTION_API.replace('edgeimpulse.com', 'acc2.edgeimpulse.com');
+        }
+        else {
+            return INGESTION_API;
         }
     }
-}
+};
 
 export const storeIngestionApi = (ingestionApi: string) => {
     console.log('storeIngestionApi', ingestionApi);
@@ -83,23 +87,27 @@ export const storeIngestionApi = (ingestionApi: string) => {
 };
 
 export const getRemoteManagementEndpoint = () => {
-    let remoteMgmtParam = new URLSearchParams(window.location.search).get('remoteManagement')
-    let envParam = new URLSearchParams(window.location.search).get('env')
-    let localStorageParam = localStorage.getItem(LS_REMOTE_MANAGEMENT_ENDPOINT)
+    let remoteMgmtParam = new URLSearchParams(window.location.search).get('remoteManagement');
+    let envParam = new URLSearchParams(window.location.search).get('env');
+    let localStorageParam = localStorage.getItem(LS_REMOTE_MANAGEMENT_ENDPOINT);
     if (remoteMgmtParam) {
         return remoteMgmtParam;
-    } else if (envParam) {
-        return "ws://remote-mgmt." + envParam + ".test.edgeimpulse.com"
-    } else if (localStorageParam) {
-        return localStorageParam
-    } else {
+    }
+    else if (envParam) {
+        return "ws://remote-mgmt." + envParam + ".test.edgeimpulse.com";
+    }
+    else if (localStorageParam) {
+        return localStorageParam;
+    }
+    else {
         if (window.location.host === 'smartphone.acc2.edgeimpulse.com') {
-            return REMOTE_MANAGEMENT_ENDPOINT.replace('edgeimpulse.com', 'acc2.edgeimpulse.com')
-        } else {
-            return REMOTE_MANAGEMENT_ENDPOINT
+            return REMOTE_MANAGEMENT_ENDPOINT.replace('edgeimpulse.com', 'acc2.edgeimpulse.com');
+        }
+        else {
+            return REMOTE_MANAGEMENT_ENDPOINT;
         }
     }
-}
+};
 
 export const storeRemoteManagementEndpoint = (remoteManagementEndpoint: string) => {
     console.log('storeRemoteManagementEndpoint', remoteManagementEndpoint);
@@ -107,23 +115,27 @@ export const storeRemoteManagementEndpoint = (remoteManagementEndpoint: string) 
 };
 
 export const getStudioEndpoint = () => {
-    let studioParam = new URLSearchParams(window.location.search).get('studio')
-    let envParam = new URLSearchParams(window.location.search).get('env')
-    let localStorageParam = localStorage.getItem(LS_STUDIO_ENDPOINT)
+    let studioParam = new URLSearchParams(window.location.search).get('studio');
+    let envParam = new URLSearchParams(window.location.search).get('env');
+    let localStorageParam = localStorage.getItem(LS_STUDIO_ENDPOINT);
     if (studioParam) {
         return studioParam;
-    } else if (envParam) {
-        return "http://studio." + envParam + ".test.edgeimpulse.com"
-    } else if (localStorageParam && localStorageParam.indexOf('wss://') === -1) {
-        return localStorageParam
-    } else {
+    }
+    else if (envParam) {
+        return "http://studio." + envParam + ".test.edgeimpulse.com";
+    }
+    else if (localStorageParam && localStorageParam.indexOf('wss://') === -1) {
+        return localStorageParam;
+    }
+    else {
         if (window.location.host === 'smartphone.acc2.edgeimpulse.com') {
-            return STUDIO_ENDPOINT.replace('edgeimpulse.com', 'acc2.edgeimpulse.com')
-        } else {
-            return STUDIO_ENDPOINT
+            return STUDIO_ENDPOINT.replace('edgeimpulse.com', 'acc2.edgeimpulse.com');
+        }
+        else {
+            return STUDIO_ENDPOINT;
         }
     }
-}
+};
 
 export const storeStudioEndpoint = (studioEndpoint: string) => {
     console.log('storeStudioEndpoint', studioEndpoint);

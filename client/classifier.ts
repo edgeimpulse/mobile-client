@@ -1,4 +1,4 @@
-interface WasmRuntimeModule {
+export interface WasmRuntimeModule {
     HEAPU8: {
         buffer: Uint8Array;
     };
@@ -8,13 +8,13 @@ interface WasmRuntimeModule {
         anomaly: number;
         size(): number;
         get(index: number): {
-            label: string,
-            value: number,
-            width?: number,
-            height?: number,
-            x?: number,
-            y?: number,
-            delete: () => void
+            label: string;
+            value: number;
+            width?: number;
+            height?: number;
+            x?: number;
+            y?: number;
+            delete: () => void;
         };
     };
     get_properties(): {
@@ -30,7 +30,7 @@ interface WasmRuntimeModule {
 
 export type ClassificationResponse = {
     anomaly: number;
-    results: { label: string, value: number, width?: number, height?: number, x?: number, y?: number }[];
+    results: { label: string; value: number; width?: number; height?: number; x?: number; y?: number }[];
 };
 
 export class EdgeImpulseClassifier {
@@ -61,14 +61,18 @@ export class EdgeImpulseClassifier {
         let sensor;
         if (ret.sensor === 0 || ret.sensor === 2) {
             sensor = "accelerometer";
-        } else if (ret.sensor === 1) {
+        }
+        else if (ret.sensor === 1) {
             sensor = "microphone";
-        } else if (ret.sensor === 3) {
+        }
+        else if (ret.sensor === 3) {
             sensor = "camera";
-        } else if (ret.sensor === 4) {
+        }
+        else if (ret.sensor === 4) {
             sensor = "positional";
-        } else {
-            throw new Error('Unknown sensor.')
+        }
+        else {
+            throw new Error('Unknown sensor.');
         }
 
         return {

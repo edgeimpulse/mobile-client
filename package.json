@@ -6,7 +6,7 @@
   "scripts": {
     "start": "./node_modules/.bin/tsc-watch -p client --noClear & cd public && python -m SimpleHTTPServer 4820",
     "build": "./node_modules/.bin/tsc -p client",
-    "lint": "./node_modules/.bin/tslint -p client/tsconfig.json",
+    "lint": "eslint -c .eslintrc.js --ext .ts ./client",
     "watch": "./node_modules/.bin/tsc-watch -p client --noClear"
   },
   "repository": {
@@ -28,12 +28,19 @@
   },
   "homepage": "https://github.com/brianweet/edge-impulse-example-browser-device#readme",
   "dependencies": {
-    "axios": "0.19.2",
-    "tslint": "6.1.0"
+    "axios": "0.19.2"
   },
   "devDependencies": {
     "@types/jquery": "3.5.1",
+    "@typescript-eslint/eslint-plugin": "5.3.1",
+    "@typescript-eslint/eslint-plugin-tslint": "5.3.1",
+    "@typescript-eslint/parser": "5.3.1",
+    "eslint": "8.2.0",
+    "eslint-plugin-import": "2.25.2",
+    "eslint-plugin-jsdoc": "37.0.3",
+    "eslint-plugin-prefer-arrow": "1.2.3",
     "tsc-watch": "4.2.9",
+    "tslint": "6.1.3",
     "typescript": "4.1.3"
   }
 }

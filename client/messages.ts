@@ -42,7 +42,7 @@ export const helloMessage = (settings: EdgeImpulseSettings) => {
                     name: s.name,
                     maxSampleLengthS: s.maxSampleLength,
                     frequencies: s.frequencies
-                }
+                };
             }),
             supportsSnapshotStreaming: false
         }

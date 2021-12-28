@@ -1,6 +1,12 @@
 import { ISensor, ISamplingOptions } from "./isensor";
 import { Sample } from "../models";
 
+declare global {
+    interface Window {
+        webkitAudioContext: AudioContext;
+    }
+}
+
 declare class Recorder {
     constructor(mediaStream: MediaStreamAudioSourceNode, options: {
         numChannels: number;
@@ -10,6 +16,7 @@ declare class Recorder {
     recording: boolean;
     clear(): void;
     stop(): void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     exportWAV(fn: (blob: Blob) => any, mimeType: string | undefined, frequency: number): void;
 }
 
@@ -23,17 +30,18 @@ export class MicrophoneSensor implements ISensor {
     private _recorder: Recorder | undefined;
 
     constructor() {
-        if (this.hasSensor()) {
-            this._audioContext = new (window.AudioContext || (<any>window).webkitAudioContext)();
+        if (typeof window.AudioContext !== 'undefined' || typeof window.webkitAudioContext !== 'undefined') {
+            this._audioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
     }
 
     async hasSensor() {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return typeof window.AudioContext !== 'undefined' || typeof (<any>window).webkitAudioContext !== 'undefined';
     }
 
     async checkPermissions(fromButton: boolean) {
-        if (!this.hasSensor()) {
+        if (!(await this.hasSensor())) {
             throw new Error('Microphone not present on this device');
         }
 
@@ -70,10 +78,10 @@ export class MicrophoneSensor implements ISensor {
                 return reject('No audio stream');
             }
             if (!samplingOptions.frequency) {
-                throw new Error('Frequency not specified')
+                throw new Error('Frequency not specified');
             }
             if (!samplingOptions.length) {
-                throw new Error('Frequency not specified')
+                throw new Error('Frequency not specified');
             }
             let length = samplingOptions.length;
             let frequency = samplingOptions.frequency;
@@ -125,9 +133,9 @@ export class MicrophoneSensor implements ISensor {
                         values: eiData.slice(0, length * (frequency / 1000)),
                         intervalMs: 1000 / frequency,
                         sensors: [{
-                                name: "audio",
-                                units: "wav"
-                            }
+                            name: "audio",
+                            units: "wav"
+                        }
                         ],
                     });
                 }, undefined, frequency);

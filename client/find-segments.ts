@@ -1,13 +1,14 @@
 export class FindSegments {
     /**
      * Find segments in a data stream
+     *
      * @param data Data
      * @param samplesPerWindow Minimum distance between segments (number of datapoints)
      * @param frequency Data frequency
      * @param shiftSegments Whether to shift segments a little bit randomly, or center around the interesting window
      */
     findSegments(data: number[] | number[][], samplesPerWindow: number, frequency: number,
-                 shiftSegments: boolean) {
+        shiftSegments: boolean) {
         let combinedData: number[];
         if (typeof data[0] === 'number') {
             combinedData = (<number[]>data);
@@ -29,7 +30,7 @@ export class FindSegments {
             // and end at 1sec after the peak
             let searchEnd = Math.min(segmentCenter + minSegmentDistance, data.length - 1);
 
-            let windows: { start: number, end: number, energy: number }[] = [];
+            let windows: { start: number; end: number; energy: number }[] = [];
 
             let frameLength = Math.floor(0.02 * frequency);
             if (frameLength < 1) frameLength = 1;
@@ -52,8 +53,8 @@ export class FindSegments {
 
             if (windows.length === 0) return undefined;
 
-            let interestingWindows: { start: number, end: number, energy: number }[] = [];
-            let currInterestingWindow: { start: number, end: number, energy: number } | undefined;
+            let interestingWindows: { start: number; end: number; energy: number }[] = [];
+            let currInterestingWindow: { start: number; end: number; energy: number } | undefined;
 
             for (let w of windows) {
                 if (!currInterestingWindow) {
@@ -128,8 +129,8 @@ export class FindSegments {
             };
         });
 
-        let allSegments: { start: number, end: number }[] = [];
-        let lastSegment: { start: number, end: number } | undefined;
+        let allSegments: { start: number; end: number }[] = [];
+        let lastSegment: { start: number; end: number } | undefined;
         for (let s of segments) {
             if (typeof s === 'undefined') continue;
 
@@ -167,6 +168,7 @@ export class FindSegments {
 
     /**
      * Port of the scipy findpeaks function
+     *
      * @param data Array of data items
      * @param distance Distance between peaks (number of datapoints)
      * @param rmsThreshold RMS threshold for peaks (percentage of full data RMS)

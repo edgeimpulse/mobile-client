@@ -1,10 +1,12 @@
 import jQuery from "../node_modules/@types/jquery/index";
-declare var $: typeof jQuery;
-declare var swal: any;
+declare let $: typeof jQuery;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+declare let swal: any;
 
 export class Notify {
     /**
      * Show a notification
+     *
      * @param title Title
      * @param message Message
      * @param placement Location of the notification item
@@ -13,8 +15,8 @@ export class Notify {
      * @param type Styling of the notification
      */
     static notify(title: string, message: string, placement: 'top' | 'bottom', align: 'left' | 'center' | 'right',
-                  icon: string, type: 'default' | 'primary' | 'info' | 'success' | 'warning' | 'danger') {
-        // tslint:disable-next-line: no-unsafe-any
+        icon: string, type: 'default' | 'primary' | 'info' | 'success' | 'warning' | 'danger') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (<any>$).notify({
             icon: icon,
             title: title,
@@ -41,36 +43,36 @@ export class Notify {
                 enter: undefined,
                 exit: undefined
             },
-            template: '<div data-notify="container" class="alert alert-dismissible alert-{0} alert-notify" role="alert">' +
+            template:
+                '<div data-notify="container" class="alert alert-dismissible alert-{0} alert-notify" role="alert">' +
                 '<span class="alert-icon" data-notify="icon"></span> ' +
                 '<div class="alert-text"> ' +
                 '<span class="alert-title" data-notify="title">{1}</span> ' +
                 '<span data-notify="message">{2}</span>' +
                 '</div>' +
-                // '<div class="progress" data-notify="progressbar">' +
-                // '<div class="progress-bar progress-bar-{0}" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>' +
-                // '</div>' +
-                // '<a href="{3}" target="{4}" data-notify="url"></a>' +
-                '<button type="button" class="close" data-notify="dismiss" aria-label="Close"><span aria-hidden="true">&times;</span></button>' +
+                '<button type="button" class="close" data-notify="dismiss" aria-label="Close">' +
+                '<span aria-hidden="true">&times;</span></button>' +
                 '</div>'
         });
     }
 
     /**
      * Show an alert
+     *
      * @param title Alert title
      * @param message Alert message
      * @param type Styling
      * @returns a promise that resolves when the alert closes
      */
-    static async alert(title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' | 'question' | 'danger',
-                       onBeforeOpen?: (el: HTMLElement) => void):
+    static async alert(title: string, message: string,
+        type: 'success' | 'error' | 'warning' | 'info' | 'question' | 'danger',
+        onBeforeOpen?: (el: HTMLElement) => void):
         Promise<void> {
 
         let modalType = type === 'danger' ? 'error' : type;
 
         return new Promise((resolve) => {
-            // tslint:disable-next-line: no-unsafe-any
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             swal({
                 title: title,
                 text: message,
@@ -92,6 +94,7 @@ export class Notify {
 
     /**
      * Show a confirm button
+     *
      * @param title Alert title
      * @param message Alert message
      * @param confirmText Text on the confirm button
@@ -99,10 +102,10 @@ export class Notify {
      * @returns a promise that resolves when the alert closes. Either true or false depending on confirmation.
      */
     static async confirm(title: string, message: string, confirmText: string,
-                         modalType: 'success' | 'error' | 'warning' | 'info' | 'question',
-                         btnType: 'default' | 'primary' | 'info' | 'success' | 'warning' | 'danger') {
-        // tslint:disable-next-line: no-unsafe-any
-        let v: { value?: boolean, dismiss?: string } = await swal({
+        modalType: 'success' | 'error' | 'warning' | 'info' | 'question',
+        btnType: 'default' | 'primary' | 'info' | 'success' | 'warning' | 'danger') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let v: { value?: boolean; dismiss?: string } = await swal({
             title: title,
             text: message,
             type: modalType,
@@ -134,6 +137,7 @@ export class Notify {
 
     /**
      * Show a prompt box
+     *
      * @param title Alert title
      * @param message Alert message
      * @param confirmText Text on the confirm button
@@ -142,10 +146,10 @@ export class Notify {
      * @returns a promise that resolves when the alert closes. Either false (if dismissed) or a string
      */
     static async prompt(title: string, message: string, confirmText: string, currentValue: string,
-                        modalType: 'success' | 'error' | 'warning' | 'info' | 'question',
-                        btnType: 'default' | 'primary' | 'info' | 'success' | 'warning' | 'danger') {
-        // tslint:disable-next-line: no-unsafe-any
-        let v: { value?: string, dismiss?: string } = await swal({
+        modalType: 'success' | 'error' | 'warning' | 'info' | 'question',
+        btnType: 'default' | 'primary' | 'info' | 'success' | 'warning' | 'danger') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let v: { value?: string; dismiss?: string } = await swal({
             title: title,
             text: message,
             type: modalType,

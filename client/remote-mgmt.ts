@@ -2,7 +2,7 @@ import {
     sampleRequestReceived, sampleFinished, sampleUploading, dataMessage,
     helloMessage, sampleRequestFailed, sampleStarted
 } from "./messages";
-import { parseMessage, createSignature } from "./utils";
+import { parseMessage, createSignature, getErrorMsg } from "./utils";
 import { EdgeImpulseSettings, SampleDetails, Sample } from "./models";
 import { getRemoteManagementEndpoint, getIngestionApi } from "./settings";
 import { AxiosStatic } from '../node_modules/axios';
@@ -10,7 +10,7 @@ import { Emitter } from "./typed-event-emitter";
 import { ISensor } from "./sensors/isensor";
 import { Uploader } from "./uploader";
 
-declare var axios: AxiosStatic;
+declare let axios: AxiosStatic;
 
 interface RemoteManagementConnectionState {
     socketConnected: boolean;
@@ -21,13 +21,13 @@ interface RemoteManagementConnectionState {
 }
 
 export class RemoteManagementConnection extends Emitter<{
-    connected: [],
-    error: [string],
-    samplingStarted: [number],
-    samplingUploading: [],
-    samplingFinished: [],
-    samplingProcessing: [],
-    samplingError: [string]
+    connected: [];
+    error: [string];
+    samplingStarted: [number];
+    samplingUploading: [];
+    samplingFinished: [];
+    samplingProcessing: [];
+    samplingError: [string];
 }> {
     private _socket: WebSocket;
     private _socketHeartbeat = -1;
@@ -36,7 +36,7 @@ export class RemoteManagementConnection extends Emitter<{
     private _uploader: Uploader;
 
     constructor(settings: EdgeImpulseSettings,
-                waitForSamplingToStart?: (sensorName: string) => Promise<ISensor>) {
+        waitForSamplingToStart?: (sensorName: string) => Promise<ISensor>) {
         super();
 
         this._socket = new WebSocket(getRemoteManagementEndpoint());
@@ -132,7 +132,7 @@ export class RemoteManagementConnection extends Emitter<{
                         this.emit('samplingFinished');
                     }
                     catch (ex) {
-                        alert(ex.message || ex.toString());
+                        alert(getErrorMsg(ex));
                     }
                     finally {
                         this._state.sample = msg;
@@ -141,9 +141,9 @@ export class RemoteManagementConnection extends Emitter<{
                 }
                 catch (ex) {
                     this.emit('samplingFinished');
-                    this.emit('samplingError', ex.message || ex.toString());
+                    this.emit('samplingError', getErrorMsg(ex));
                     this.sendMessage(
-                        sampleRequestFailed((ex.message || ex.toString()))
+                        sampleRequestFailed(getErrorMsg(ex))
                     );
                 }
             }
@@ -152,7 +152,8 @@ export class RemoteManagementConnection extends Emitter<{
         this._socket.onclose = event => {
             clearInterval(this._socketHeartbeat);
             const msg = event.wasClean ?
-                `[close] Connection closed cleanly, code=${event.code} reason=${event.reason}` : // e.g. server process killed or network down
+                // e.g. server process killed or network down
+                `[close] Connection closed cleanly, code=${event.code} reason=${event.reason}` :
                 // event.code is usually 1006 in this case
                 "[close] Connection died";
             this._state.socketConnected = false;
@@ -169,6 +170,7 @@ export class RemoteManagementConnection extends Emitter<{
         };
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     sendMessage = (data: any) => {
         this._socket.send(JSON.stringify(data));
     };
@@ -181,6 +183,6 @@ export class RemoteManagementConnection extends Emitter<{
             };
             reader.onerror = reject;
             reader.readAsBinaryString(file);
-        })
+        });
     }
 }

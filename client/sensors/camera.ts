@@ -20,7 +20,7 @@ export class CameraSensor implements ISensor {
     }
 
     async checkPermissions(fromClick: boolean): Promise<boolean> {
-        if (!this.hasSensor()) {
+        if (!(await this.hasSensor())) {
             throw new Error('Camera not present on this device');
         }
         if (this._stream) {
@@ -150,7 +150,7 @@ export class CameraSensor implements ISensor {
                         // tslint:disable-next-line: no-bitwise
                         | (imageData.data[ix * 4 + 1] << 8)
                         // tslint:disable-next-line: no-bitwise
-                        | (imageData.data[ix * 4 + 2])))
+                        | (imageData.data[ix * 4 + 2])));
                 }
 
                 resolve({
@@ -161,7 +161,8 @@ export class CameraSensor implements ISensor {
                         units: "rgba"
                     }]
                 });
-            } else {
+            }
+            else {
                 canvas.toBlob(saveFrame, 'image/jpeg', 0.95);
             }
         });

@@ -12,11 +12,12 @@ export class AccelerometerSensor implements ISensor {
         return typeof DeviceMotionEvent !== 'undefined';
     }
 
-    checkPermissions(fromClick: boolean): Promise<boolean> {
-        if (!this.hasSensor()) {
+    async checkPermissions(fromClick: boolean): Promise<boolean> {
+        if (!(await this.hasSensor())) {
             throw new Error('Accelerometer not present on this device');
         }
 
+        /* eslint-disable @typescript-eslint/no-explicit-any */
         if (typeof (DeviceMotionEvent as any).requestPermission !== 'function') {
             return Promise.resolve(true);
         }
@@ -49,14 +50,14 @@ export class AccelerometerSensor implements ISensor {
     takeSample(samplingOptions: ISamplingOptions) {
         return new Promise<Sample>((resolve, _reject) => {
             if (!samplingOptions.frequency) {
-                throw new Error('Frequency not specified')
+                throw new Error('Frequency not specified');
             }
             if (!samplingOptions.length) {
-                throw new Error('Frequency not specified')
+                throw new Error('Frequency not specified');
             }
             let frequency = samplingOptions.frequency;
             let length = samplingOptions.length;
-            let currentSample: { x: number, y: number, z: number } | undefined;
+            let currentSample: { x: number; y: number; z: number } | undefined;
             let sampleValues: number[][] = [];
 
             let firstEvent = true;
@@ -97,17 +98,17 @@ export class AccelerometerSensor implements ISensor {
                                 values: sampleValues.slice(0, Math.floor(length / (1000 / frequency))),
                                 intervalMs: 1000 / frequency,
                                 sensors: [{
-                                        name: "accX",
-                                        units: "m/s2"
-                                    },
-                                    {
-                                        name: "accY",
-                                        units: "m/s2"
-                                    },
-                                    {
-                                        name: "accZ",
-                                        units: "m/s2"
-                                    }
+                                    name: "accX",
+                                    units: "m/s2"
+                                },
+                                {
+                                    name: "accY",
+                                    units: "m/s2"
+                                },
+                                {
+                                    name: "accZ",
+                                    units: "m/s2"
+                                }
                                 ],
                             });
                         }, length + 200);

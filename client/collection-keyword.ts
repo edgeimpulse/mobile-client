@@ -173,7 +173,7 @@ export class DataCollectionKeywordClientViews {
                                         name: p.name,
                                         frequencies: p.frequencies,
                                         maxSampleLength: p.maxSampleLength
-                                    }
+                                    };
                                 }),
                                 deviceType: 'MOBILE_CLIENT'
                             }
@@ -230,7 +230,8 @@ export class DataCollectionKeywordClientViews {
 
         if (sensorName !== 'Camera') {
             this._views.sampling.style.display = 'initial';
-        } else {
+        }
+        else {
             this._views.sampling.style.display = 'none';
         }
 
@@ -271,12 +272,12 @@ export class DataCollectionKeywordClientViews {
                             resolve(sensor);
                         }
                         else {
-                            reject('User has rejected accelerometer permissions')
+                            reject('User has rejected accelerometer permissions');
                         }
                     }).catch(reject);
 
                     clearInterval(permissionTimeout);
-                }
+                };
             });
         }
     }

@@ -8,6 +8,7 @@ import { ClassificationLoader } from "./classification-loader";
 import { ClassificationResponse, EdgeImpulseClassifier } from "./classifier";
 import { Notify } from "./notify";
 import { MovingAverageFilter } from "./moving-average-filter";
+import { getErrorMsg } from "./utils";
 
 export class ClassificationClientViews {
     private _views = {
@@ -36,7 +37,7 @@ export class ClassificationClientViews {
         cameraInner: document.querySelector('.capture-camera-inner') as HTMLElement,
         cameraVideo: document.querySelector('.capture-camera-inner video') as HTMLVideoElement,
         cameraCanvas: document.querySelector('.capture-camera-inner canvas') as HTMLCanvasElement,
-    }
+    };
 
     private _sensors: ISensor[] = [];
     private _classifier: EdgeImpulseClassifier | undefined;
@@ -93,7 +94,7 @@ export class ClassificationClientViews {
 
             this._elements.loadingText.textContent = 'Loading classifier...';
 
-            // tslint:disable-next-line: no-floating-promises
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
             (async () => {
                 let loader = new ClassificationLoader(getStudioEndpoint(), getApiKey());
                 loader.on('status', msg => {
@@ -115,16 +116,16 @@ export class ClassificationClientViews {
 
                     let props = this._classifier.getProperties();
 
-                    if (props.sensor === 'microphone' && !microphone.hasSensor()) {
+                    if (props.sensor === 'microphone' && !(await microphone.hasSensor())) {
                         throw new Error('Model expects microphone, but device has none');
                     }
-                    else if (props.sensor === 'accelerometer' && !accelerometer.hasSensor()) {
+                    else if (props.sensor === 'accelerometer' && !(await accelerometer.hasSensor())) {
                         throw new Error('Model expects accelerometer, but device has none');
                     }
-                    else if (props.sensor === 'camera' && !camera.hasSensor()) {
+                    else if (props.sensor === 'camera' && !(await camera.hasSensor())) {
                         throw new Error('Model expects camera, but device has none');
                     }
-                    else if (props.sensor === 'positional' && !imu9DOF.hasSensor()) {
+                    else if (props.sensor === 'positional' && !(await imu9DOF.hasSensor())) {
                         throw new Error('Model expects positional sensors, but device has none');
                     }
 
@@ -155,12 +156,14 @@ export class ClassificationClientViews {
                 }
                 catch (ex) {
                     console.error('Failed to load', ex);
-                    if ((ex.message || ex.toString()).indexOf('No deployment yet') > -1) {
+                    const errMsg = getErrorMsg(ex);
+                    if (errMsg.indexOf('No deployment yet') > -1) {
                         this._elements.connectionFailedMessage.innerHTML = 'No deployment yet. Go to the ' +
-                            '<strong>Deployment</strong> page in the Edge Impulse studio, and deploy as WebAssembly.';
+                            '<strong>Deployment</strong> page in the Edge Impulse studio, ' +
+                            'and deploy as WebAssembly.';
                     }
                     else {
-                        this._elements.connectionFailedMessage.textContent = (ex.message || ex.toString());
+                        this._elements.connectionFailedMessage.textContent = errMsg;
                     }
 
                     this.switchView(this._views.connectionFailed);
@@ -369,7 +372,8 @@ export class ClassificationClientViews {
                             samplingOptions.mode = 'raw';
                             samplingOptions.inputWidth = prop.inputWidth;
                             samplingOptions.inputHeight = prop.inputHeight;
-                        } else {
+                        }
+                        else {
                             samplingOptions.length = sampleWindowLength;
                             samplingOptions.frequency = prop.frequency ;
                         }
@@ -381,13 +385,16 @@ export class ClassificationClientViews {
 
                         if (prop.sensor === 'camera') {
                             console.log('classification disable button');
-                            this._elements.inferenceCaptureButton.innerHTML = '<i class="fa fa-camera mr-2"></i>Inferencing...';
+                            this._elements.inferenceCaptureButton.innerHTML =
+                                '<i class="fa fa-camera mr-2"></i>Inferencing...';
                             this._elements.inferenceCaptureButton.classList.add('disabled');
 
                             (<CameraSensor>sensor).pause();
 
                             if (this._isObjectDetection) {
-                                for (let bx of Array.from(this._elements.cameraInner.querySelectorAll('.bounding-box-container'))) {
+                                for (let bx of Array.from(
+                                    this._elements.cameraInner.querySelectorAll('.bounding-box-container'))
+                                ) {
                                     bx.parentNode?.removeChild(bx);
                                 }
                                 await this.sleep(10);
@@ -422,11 +429,12 @@ export class ClassificationClientViews {
 
                         if (prop.sensor === 'camera') {
                             console.log('classification enable button again');
-                            this._elements.inferenceCaptureBody.style.display = 'initial'
-                            this._elements.inferenceRecordingMessageBody.style.display = 'none'
+                            this._elements.inferenceCaptureBody.style.display = 'initial';
+                            this._elements.inferenceRecordingMessageBody.style.display = 'none';
                             this._elements.inferenceCaptureButton.classList.remove('disabled');
 
-                            this._elements.inferenceCaptureButton.innerHTML = '<i class="fa fa-camera mr-2"></i>Next photo';
+                            this._elements.inferenceCaptureButton.innerHTML =
+                                '<i class="fa fa-camera mr-2"></i>Next photo';
 
                             let onClick = async (ev: MouseEvent) => {
                                 ev.preventDefault();
@@ -443,7 +451,8 @@ export class ClassificationClientViews {
                                         bx.parentNode?.removeChild(bx);
                                     }
 
-                                    this._elements.inferenceCaptureButton.innerHTML = '<i class="fa fa-camera mr-2"></i>Classify';
+                                    this._elements.inferenceCaptureButton.innerHTML =
+                                        '<i class="fa fa-camera mr-2"></i>Classify';
                                     await cameraSensor.resume();
                                 }
                             };
@@ -455,8 +464,8 @@ export class ClassificationClientViews {
                         }
                         else {
                             let startDelay = 2;
-                            this._elements.inferenceCaptureBody.style.display = 'none'
-                            this._elements.inferenceRecordingMessageBody.style.display = 'initial'
+                            this._elements.inferenceCaptureBody.style.display = 'none';
+                            this._elements.inferenceRecordingMessageBody.style.display = 'initial';
                             this._elements.inferencingTimeLeft.textContent = 'Waiting';
                             this._elements.inferencingMessage.textContent = `Starting in ${startDelay} seconds...`;
                             setTimeout(sampleNextWindow, startDelay * 1000);
@@ -465,7 +474,7 @@ export class ClassificationClientViews {
                     catch (ex) {
                         clearInterval(iv);
                         console.error(ex);
-                        this._elements.connectionFailedMessage.textContent = (ex.message || ex.toString());
+                        this._elements.connectionFailedMessage.textContent = getErrorMsg(ex);
                         this.switchView(this._views.connectionFailed);
                     }
                 };
@@ -476,7 +485,8 @@ export class ClassificationClientViews {
                         throw new Error('Sensor is not microphone, cannot do continuous audio sampling');
                     }
 
-                    this._elements.inferencingMessage.textContent = 'Listening...';
+                    document.body.classList.add('continuous-audio');
+                    this._elements.inferencingTimeLeft.textContent = 'Listening...';
 
                     let isClassifying = false;
                     let last = Date.now();
@@ -484,6 +494,8 @@ export class ClassificationClientViews {
                     // e.g. if 800ms. then we use 200ms.
                     let sampleLength = 250 - (sampleWindowLength % 250);
                     let maf: MovingAverageFilter | undefined;
+
+                    let lastFiveResults: string[] = [];
 
                     const classify = async (data: number[]) => {
                         try {
@@ -499,24 +511,55 @@ export class ClassificationClientViews {
                             let res = this._classifier.classify(data, false);
                             console.timeEnd('inferencing');
 
-                            console.log('inference results before MAF', res);
+                            console.log('inference results', res);
 
-                            if (!maf) {
-                                maf = new MovingAverageFilter(4, res.results.map(x => x.label));
-                            }
+                            // Disabled: few-shot KWS does better on short words with MAF disabled
 
-                            res = maf.run(res);
-
-                            console.log('inference results after MAF', res);
+                            // console.log('inference results before MAF', res);
+                            // if (!maf) {
+                            //     maf = new MovingAverageFilter(4, res.results.map(x => x.label));
+                            // }
+                            // res = maf.run(res);
+                            // console.log('inference results after MAF', res);
 
                             await renderInferenceResults(res, sampleLength);
 
-                            let highest = res.results.find(x => x.value >= 0.8);
-                            if (highest) {
-                                this._elements.inferencingMessage.textContent = highest.label;
+                            // if we have 3 classes (unknown/noise/XXX) then we only show something
+                            // when XXX is detected...
+                            let resKeys = res.results.map(x => x.label);
+                            if (resKeys.length === 3 && resKeys.indexOf('unknown') > -1 &&
+                                resKeys.indexOf('noise') > -1) {
+
+                                let keyword = resKeys.find(x => x !== 'noise' && x !== 'unknown');
+                                let keywordRes = keyword ? res.results.find(x => x.label === keyword) : undefined;
+                                if (keywordRes && keywordRes.value >= 0.8) {
+                                    lastFiveResults.push(keywordRes.label);
+                                }
+                                else {
+                                    lastFiveResults.push('...');
+                                }
+
+                                // saw the keyword in the last 5 results? then print it
+                                if (lastFiveResults.length > 5) {
+                                    lastFiveResults = lastFiveResults.slice(1);
+                                }
+
+                                if (keywordRes && lastFiveResults.indexOf(keywordRes.label) > -1) {
+                                    this._elements.inferencingMessage.textContent = keywordRes.label;
+                                }
+                                else {
+                                    this._elements.inferencingMessage.textContent = '...';
+                                }
                             }
+                            // otherwise just print highest >= 0.8
                             else {
-                                this._elements.inferencingMessage.textContent = 'uncertain';
+                                let highest = res.results.find(x => x.value >= 0.8);
+                                if (highest) {
+                                    this._elements.inferencingMessage.textContent = highest.label;
+                                }
+                                else {
+                                    this._elements.inferencingMessage.textContent = 'uncertain';
+                                }
                             }
 
                             isClassifying = false;
@@ -526,9 +569,9 @@ export class ClassificationClientViews {
                             this._elements.connectionFailedMessage.textContent = ex.message || ex.toString();
                             this.switchView(this._views.connectionFailed);
                         }
-                    }
+                    };
 
-                    // tslint:disable-next-line: no-floating-promises
+                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
                     (async () => {
                         try {
                             let allData: number[] = [];
@@ -545,7 +588,7 @@ export class ClassificationClientViews {
                                 if (allData.length >= prop.frameSampleCount) {
                                     // we do this in a setTimeout so we go read immediately again
                                     setTimeout(() => {
-                                        // tslint:disable-next-line: no-floating-promises
+                                        // eslint-disable-next-line @typescript-eslint/no-floating-promises
                                         classify(allData.slice(allData.length - prop.frameSampleCount));
                                     }, 0);
                                 }
@@ -570,7 +613,7 @@ export class ClassificationClientViews {
                 }
             }
             else {
-                alert('User has rejected ' + (prop.sensor) + ' permissions')
+                alert('User has rejected ' + (prop.sensor) + ' permissions');
             }
         }).catch(err => {
             console.error(err);

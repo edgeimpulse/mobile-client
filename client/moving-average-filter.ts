@@ -7,11 +7,12 @@ export class MovingAverageFilter {
             runningSum: number;
             buffer: number[];
             bufferIdx: number;
-        }
+        };
     } = { };
 
     /**
      * Create a moving average filter to smooth over results
+     *
      * @param filterSize Size of the filter, e.g. number of classifications per second for audio models
      * @param labels All labels in the model
      */
@@ -28,6 +29,7 @@ export class MovingAverageFilter {
 
     /**
      * Apply the moving average filter over incoming results
+     *
      * @param result Classification results
      * @returns Classification results with the filter applied
      */

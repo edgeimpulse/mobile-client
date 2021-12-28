@@ -1,0 +1,39 @@
+{
+    "compilerOptions": {
+        "incremental": true,
+        "target": "es2017",
+        "module": "amd",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "outFile": "../build/client/bundle.js",
+        "strict": true,
+        "sourceMap": true,
+        "lib": [ "dom", "dom.iterable", "es2017", "es2018" ],
+        "allowJs": true,
+        "types": [ ]
+    },
+    "watchOptions": {
+        "watchFile": "useFsEvents",
+        "watchDirectory": "useFsEvents",
+        "fallbackPolling": "dynamicPriority"
+    },
+    "include": [
+        "../public/ace/typings/*",
+        "../public/argon-assets/js/argon-dashboard.js",
+        "../public/peaks.js/typings/peaks.js.d.ts",
+        "../node_modules/typed-event-emitter/*",
+        "../node_modules/typed-emitter/*",
+        "../node_modules/@types/*",
+        "../node_modules/@types/bootstrap/*",
+        "../node_modules/@types/clipboard/*",
+        "../node_modules/@types/croppie/*",
+        "../node_modules/@types/events/*",
+        "../node_modules/@types/plotly.js/*",
+        "../node_modules/@types/nouislider/*",
+        "../node_modules/@types/socket.io-client/*",
+        "**/*",
+        "../shared/daemon/events/index.js",
+        "../shared/*",
+        "../shared/viewmodels/*"
+    ]
+}

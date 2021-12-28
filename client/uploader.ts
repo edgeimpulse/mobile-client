@@ -38,22 +38,23 @@ export class Uploader {
             formData.append("image", sampleData.attachments[0].value, "image.jpg");
         }
 
-        return new Promise<string>((resolve: any, reject: any) => {
+        return new Promise<string>(
+            (resolve: (result: string) => void, reject: (reason: string | undefined) => void) => {
 
-            let xml = new XMLHttpRequest();
-            xml.onload = () => {
-                if (xml.status === 200) {
-                    resolve(xml.responseText);
-                }
-                else {
-                    reject('Failed to upload (status code ' + xml.status + '): ' + xml.responseText);
-                }
-            };
-            xml.onerror = () => reject();
-            xml.open("post", getIngestionApi() + details.path)
-            xml.setRequestHeader("x-api-key", this._apiKey)
-            xml.setRequestHeader("x-file-name", this.encodeLabel(details.label))
-            xml.send(formData);
-        });
+                let xml = new XMLHttpRequest();
+                xml.onload = () => {
+                    if (xml.status === 200) {
+                        resolve(xml.responseText);
+                    }
+                    else {
+                        reject('Failed to upload (status code ' + xml.status + '): ' + xml.responseText);
+                    }
+                };
+                xml.onerror = () => reject(undefined);
+                xml.open("post", getIngestionApi() + details.path);
+                xml.setRequestHeader("x-api-key", this._apiKey);
+                xml.setRequestHeader("x-file-name", this.encodeLabel(details.label));
+                xml.send(formData);
+            });
     }
 }

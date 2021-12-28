@@ -41,6 +41,7 @@ export class Positional9DOFSensor implements ISensor {
      *     }
      *     window.addEventListener('devicemotion', checkForGyro);
      *  });
+     *
      * @returns boolean
      */
     async hasSensor() {
@@ -48,11 +49,11 @@ export class Positional9DOFSensor implements ISensor {
     }
 
     async checkPermissions(fromClick: boolean): Promise<boolean> {
-        if (!this.hasSensor()) {
+        if (!(await this.hasSensor())) {
             throw new Error('9DOF not present on this device');
         }
-
-        if (typeof DeviceMotionEvent.requestPermission !== 'function') {
+        /* eslint-disable @typescript-eslint/no-explicit-any */
+        if (typeof (<any>DeviceMotionEvent).requestPermission !== 'function') {
             return true;
         }
 
@@ -61,13 +62,15 @@ export class Positional9DOFSensor implements ISensor {
         }
 
         try {
-            const response = await DeviceMotionEvent.requestPermission();
+            const response = await (<any>DeviceMotionEvent).requestPermission();
             return response === 'granted';
-        } catch (err) {
-            let msg = typeof err === 'string' ? err : err.message || err.toString();
+        }
+        catch (err) {
+            let msg = err instanceof Error ? err.message || err.toString() : '' + err;
             if (msg.indexOf('requires a user gesture to prompt') > -1) {
                 return false;
-            } else {
+            }
+            else {
                 throw err;
             }
         }

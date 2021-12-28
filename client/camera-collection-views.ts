@@ -6,6 +6,7 @@ import { SampleDetails } from "./models";
 import { ClassificationLoader } from "./classification-loader";
 import { dataMessage } from "./messages";
 import { Notify } from "./notify";
+import { getErrorMsg } from "./utils";
 
 export class CameraDataCollectionClientViews {
     private _views = {
@@ -88,7 +89,7 @@ export class CameraDataCollectionClientViews {
             }
             catch (ex) {
                 console.error('Failed to load', ex);
-                this._elements.connectionFailedMessage.textContent = (ex.message || ex.toString());
+                this._elements.connectionFailedMessage.textContent = getErrorMsg(ex);
 
                 this.switchView(this._views.connectionFailed);
             }
@@ -122,12 +123,13 @@ export class CameraDataCollectionClientViews {
                 if (this._elements.categoryText.textContent === 'split') {
                     if (this._numCaptures > 0) {
                         category = await this.getCategoryFromBlob(sample.attachments[0].value);
-                    } else {
-                        category = 'training'
+                    }
+                    else {
+                        category = 'training';
                     }
                 }
 
-                this._numCaptures = this._numCaptures + 1
+                this._numCaptures = this._numCaptures + 1;
 
                 let details: SampleDetails = {
                     hmacKey: this._hmacKey,
@@ -148,7 +150,7 @@ export class CameraDataCollectionClientViews {
                                 name: p.name,
                                 frequencies: p.frequencies,
                                 maxSampleLength: p.maxSampleLength
-                            }
+                            };
                         }),
                         deviceType: 'MOBILE_CLIENT'
                     }
@@ -156,9 +158,10 @@ export class CameraDataCollectionClientViews {
 
                 console.log('details', details, 'data', data, 'sample', sample);
 
-                // tslint:disable-next-line: no-floating-promises
+                // eslint-disable-next-line @typescript-eslint/no-floating-promises
                 (async () => {
                     if (!this._uploader) return;
+                    /* eslint-disable @typescript-eslint/no-explicit-any */
                     try {
                         let filename = await this._uploader.uploadSample(details, data, sample);
                         (<any>$).notifyClose();
@@ -167,7 +170,7 @@ export class CameraDataCollectionClientViews {
                     }
                     catch (ex) {
                         (<any>$).notifyClose();
-                        Notify.notify('Failed to upload', ex.message || ex.toString(), 'top', 'center',
+                        Notify.notify('Failed to upload', getErrorMsg(ex), 'top', 'center',
                             'far fa-times-circle', 'danger');
                     }
                 })();
@@ -179,18 +182,19 @@ export class CameraDataCollectionClientViews {
                 this._elements.capturedCount.textContent = (curr + 1).toString();
             }
             catch (ex) {
-                alert('Failed to upload: ' + (ex.message || ex.toString()));
+                alert('Failed to upload: ' + getErrorMsg(ex));
             }
             finally {
                 this._elements.captureButton.innerHTML = origHtml;
                 this._elements.captureButton.classList.remove('disabled');
             }
-        }
+        };
 
-        this._elements.labelLink.onclick = ev => {
+        this._elements.labelLink.onclick = async (ev) => {
             ev.preventDefault();
 
-            let v = prompt('Enter a label', this._elements.labelText.textContent || '');
+            const v = await Notify.prompt('Enter a label', '', 'Set label',
+                this._elements.labelText.textContent || '', 'info', 'info');
             if (v) {
                 if (v && this._elements.labelText.textContent !== v) {
                     this._elements.capturedCount.textContent = '0';
@@ -253,7 +257,7 @@ export class CameraDataCollectionClientViews {
                 }
             }
             else {
-                alert('User has rejected camera permissions')
+                alert('User has rejected camera permissions');
             }
         }).catch(err => {
             console.error(err);
