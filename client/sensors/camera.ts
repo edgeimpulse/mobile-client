@@ -58,10 +58,9 @@ export class CameraSensor implements ISensor {
     takeSample(samplingOptions: ISamplingOptions) {
         const video = document.querySelector('video');
         const canvas = document.querySelector('canvas');
-        const capture = document.querySelector('#capture-camera') as HTMLElement;
         const captureButton = document.querySelector('#capture-camera-button') as HTMLElement;
 
-        if (!video || !canvas || !capture || !captureButton) {
+        if (!video || !canvas || !captureButton) {
             throw new Error('Element not found');
         }
         if (!this._stream) {
@@ -71,9 +70,6 @@ export class CameraSensor implements ISensor {
         let streamHeight = this._stream.getVideoTracks()[0].getSettings().height || 256;
         let imageWidth = samplingOptions.inputWidth || Math.min(streamWidth, MAX_IMAGE_WIDTH);
         let imageHeight = samplingOptions.inputHeight || (imageWidth / streamWidth) * streamHeight;
-
-        canvas.width = imageWidth;
-        canvas.height = imageHeight;
 
         return new Promise<Sample>((resolve, reject) => {
             captureButton.onclick = async () => {

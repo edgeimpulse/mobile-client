@@ -1,5 +1,9 @@
 import jQuery from "../node_modules/@types/jquery/index";
-declare let $: typeof jQuery;
+interface NotifyLibrary {
+    notifyClose: () => void;
+    notify: () => void;
+}
+declare let $: typeof jQuery & NotifyLibrary;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare let swal: any;
 
@@ -16,6 +20,11 @@ export class Notify {
      */
     static notify(title: string, message: string, placement: 'top' | 'bottom', align: 'left' | 'center' | 'right',
         icon: string, type: 'default' | 'primary' | 'info' | 'success' | 'warning' | 'danger') {
+
+        if (typeof $.notifyClose === 'function') {
+            $.notifyClose();
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (<any>$).notify({
             icon: icon,

@@ -1,3 +1,12 @@
+export enum EiSerialSensor {
+    EI_CLASSIFIER_SENSOR_UNKNOWN             = -1,
+    EI_CLASSIFIER_SENSOR_MICROPHONE          = 1,
+    EI_CLASSIFIER_SENSOR_ACCELEROMETER       = 2,
+    EI_CLASSIFIER_SENSOR_CAMERA              = 3,
+    EI_CLASSIFIER_SENSOR_9DOF                = 4,
+    EI_CLASSIFIER_SENSOR_ENVIRONMENTAL       = 5,
+}
+
 export interface WasmRuntimeModule {
     HEAPU8: {
         buffer: Uint8Array;
@@ -18,11 +27,24 @@ export interface WasmRuntimeModule {
         };
     };
     get_properties(): {
-        sensor: number;
         frequency: number;
-        frame_sample_count: number;
-        input_width: number;
-        input_height: number;
+        has_anomaly: boolean;
+        input_features_count: number;
+        image_input_width: number;
+        image_input_height: number;
+        image_input_frames: number;
+        image_input_channel_count: number;
+        interval_ms: number;
+        axis_count: number;
+        label_count: number;
+        sensor: EiSerialSensor;
+        model_type: 'classifier' | 'object_detection' | 'constrained_object_detection';
+    };
+    get_project(): {
+        id: number;
+        owner: string;
+        name: string;
+        deploy_version: number;
     };
     _free(pointer: number): void;
     _malloc(bytes: number): number;
@@ -59,29 +81,40 @@ export class EdgeImpulseClassifier {
         const ret = this._module.get_properties();
 
         let sensor;
-        if (ret.sensor === 0 || ret.sensor === 2) {
+        if (ret.sensor === EiSerialSensor.EI_CLASSIFIER_SENSOR_ACCELEROMETER) {
             sensor = "accelerometer";
         }
-        else if (ret.sensor === 1) {
+        else if (ret.sensor === EiSerialSensor.EI_CLASSIFIER_SENSOR_MICROPHONE) {
             sensor = "microphone";
         }
-        else if (ret.sensor === 3) {
+        else if (ret.sensor === EiSerialSensor.EI_CLASSIFIER_SENSOR_CAMERA) {
             sensor = "camera";
         }
-        else if (ret.sensor === 4) {
+        else if (ret.sensor === EiSerialSensor.EI_CLASSIFIER_SENSOR_9DOF) {
             sensor = "positional";
         }
         else {
-            throw new Error('Unknown sensor.');
+            throw new Error('Unknown sensor (' + ret.sensor + ')');
         }
 
         return {
             sensor: sensor,
             frequency: ret.frequency,
-            frameSampleCount: ret.frame_sample_count,
-            inputWidth: ret.input_width,
-            inputHeight: ret.input_height
+            inputFeaturesCount: ret.input_features_count,
+            imageInputWidth: ret.image_input_width,
+            imageInputHeight: ret.image_input_height,
+            imageInputFrames: ret.image_input_frames,
+            imageInputChannelCount: ret.image_input_channel_count,
+            intervalMs: ret.interval_ms,
+            axisCount: ret.axis_count,
+            labelCount: ret.label_count,
+            modelType: ret.model_type,
+            hasAnomaly: ret.has_anomaly,
         };
+    }
+
+    getProject() {
+        return this._module.get_project();
     }
 
     classify(rawData: number[], debug = false): ClassificationResponse {

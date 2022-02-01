@@ -215,7 +215,7 @@ export class ClassificationClientViews {
                     this._elements.inferenceRecordingMessageBody.style.display = '';
                 }
 
-                let sampleWindowLength = prop.frameSampleCount * (1000 / prop.frequency);
+                let sampleWindowLength = prop.inputFeaturesCount * (1000 / prop.frequency);
                 this._elements.inferencingTimeLeft.textContent = 'Waiting';
                 this._elements.inferencingMessage.textContent = 'Starting in 2 seconds...';
 
@@ -334,15 +334,31 @@ export class ClassificationClientViews {
                             el.classList.add('bounding-box-container');
                             el.style.position = 'absolute';
                             el.style.border = 'solid 3px ' + color;
-                            el.style.width = (bb.width) + 'px';
-                            el.style.height = (bb.height) + 'px';
-                            el.style.left = (bb.x) + 'px';
-                            el.style.top = (bb.y) + 'px';
+
+                            if (prop.modelType === 'object_detection') {
+                                el.style.width = (bb.width) + 'px';
+                                el.style.height = (bb.height) + 'px';
+                                el.style.left = (bb.x) + 'px';
+                                el.style.top = (bb.y) + 'px';
+                            }
+                            else if (prop.modelType === 'constrained_object_detection') {
+                                let centerX = bb.x + (bb.width / 2);
+                                let centerY = bb.y + (bb.height / 2);
+
+                                el.style.borderRadius = '10px';
+                                el.style.width = 20 + 'px';
+                                el.style.height = 20 + 'px';
+                                el.style.left = (centerX - 10) + 'px';
+                                el.style.top = (centerY - 10) + 'px';
+                            }
 
                             let label = document.createElement('div');
                             label.classList.add('bounding-box-label');
                             label.style.background = color;
                             label.textContent = bb.label + ' (' + bb.value.toFixed(2) + ')';
+                            if (prop.modelType === 'constrained_object_detection') {
+                                el.style.whiteSpace = 'nowrap';
+                            }
                             el.appendChild(label);
 
                             this._elements.cameraInner.appendChild(el);
@@ -370,8 +386,8 @@ export class ClassificationClientViews {
                         let samplingOptions: ISamplingOptions = { };
                         if (prop.sensor === 'camera') {
                             samplingOptions.mode = 'raw';
-                            samplingOptions.inputWidth = prop.inputWidth;
-                            samplingOptions.inputHeight = prop.inputHeight;
+                            samplingOptions.inputWidth = prop.imageInputWidth;
+                            samplingOptions.inputHeight = prop.imageInputHeight;
                         }
                         else {
                             samplingOptions.length = sampleWindowLength;
@@ -397,16 +413,16 @@ export class ClassificationClientViews {
                                 ) {
                                     bx.parentNode?.removeChild(bx);
                                 }
-                                await this.sleep(10);
+                                await this.sleep(1);
                             }
                             else {
-                                await this.sleep(100);
+                                await this.sleep(1);
                             }
                         }
                         else {
                             // give some time to give the idea we're inferencing
                             this._elements.inferencingMessage.textContent = 'Inferencing...';
-                            await this.sleep(500);
+                            await this.sleep(300);
                         }
 
                         let d: number[];
@@ -585,11 +601,11 @@ export class ClassificationClientViews {
                                 let data = await sensor.takeSample(samplingOptions);
                                 let d = <number[]>data.values;
                                 allData = allData.concat(d);
-                                if (allData.length >= prop.frameSampleCount) {
+                                if (allData.length >= prop.inputFeaturesCount) {
                                     // we do this in a setTimeout so we go read immediately again
                                     setTimeout(() => {
                                         // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                                        classify(allData.slice(allData.length - prop.frameSampleCount));
+                                        classify(allData.slice(allData.length - prop.inputFeaturesCount));
                                     }, 0);
                                 }
                             }

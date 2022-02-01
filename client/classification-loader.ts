@@ -64,14 +64,22 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
 
         this.emit('status', 'Extracted ' + data.length + ' files');
 
-        const wasmFile = data.find(d => d.filename.endsWith('.wasm'));
+        console.log('Extracted files', data);
+
+        let wasmFile = data.find(d => d.filename.endsWith('edge-impulse-standalone.wasm'));
         if (!wasmFile) {
-            throw new Error('Cannot find .wasm file in ZIP file');
+            wasmFile = data.find(d => d.filename.endsWith('.wasm'));
+            if (!wasmFile) {
+                throw new Error('Cannot find edge-impulse-standalone.wasm file in ZIP file');
+            }
         }
 
-        const jsFile = data.find(d => d.filename.endsWith('.js'));
+        let jsFile = data.find(d => d.filename.endsWith('edge-impulse-standalone.js'));
         if (!jsFile) {
-            throw new Error('Cannot find .js file in ZIP file');
+            jsFile = data.find(d => d.filename.endsWith('.js'));
+            if (!jsFile) {
+                throw new Error('Cannot find edge-impulse-standalone.js file in ZIP file');
+            }
         }
 
         const wasmUrl = await this.blobToDataUrl(wasmFile.blob);
