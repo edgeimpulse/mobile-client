@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "incremental": true,
-        "target": "es2017",
+        "target": "es2019",
         "module": "amd",
         "moduleResolution": "node",
         "esModuleInterop": true,

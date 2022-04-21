@@ -307,7 +307,7 @@ export class ClassificationClientViews {
                         let factor = Number(this._elements.cameraCanvas.height) /
                             Number(this._elements.cameraVideo.clientHeight);
 
-                        for (let b of res.results.filter(bb => bb.value >= 0.5)) {
+                        for (let b of res.results) {
                             if (typeof b.x !== 'number' ||
                                 typeof b.y !== 'number' ||
                                 typeof b.width !== 'number' ||

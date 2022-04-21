@@ -4,7 +4,8 @@ WORKDIR /app
 
 # Copy creates a new layer, when package.json is changed it'll re-run the below
 COPY package*.json ./
-RUN npm install
+RUN npm set audit false -g
+RUN npm ci
 
 EXPOSE 4820
 

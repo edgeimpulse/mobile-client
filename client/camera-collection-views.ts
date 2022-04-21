@@ -47,14 +47,9 @@ export class CameraDataCollectionClientViews {
         }
         this._sensors.push(camera);
 
-        // if we are not on a platform that overrides the menu action we'll move it to the place
-        // of the textbox
-        let selectStyle = window.getComputedStyle(this._elements.categorySelect);
-        if (selectStyle.webkitAppearance !== 'menulist-button') {
-            this._elements.categoryText.style.display = 'none';
-            this._elements.categoryText.parentNode?.insertBefore(this._elements.categorySelect,
-                this._elements.categoryText);
-        }
+        this._elements.categoryText.style.display = 'none';
+        this._elements.categoryText.parentNode?.insertBefore(this._elements.categorySelect,
+            this._elements.categoryText);
 
         if (getApiKey()) {
             storeApiKey(getApiKey());
