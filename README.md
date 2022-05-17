@@ -28,7 +28,14 @@ To build:
 
     ```
     $ cd public
+    ```
+    For *python2*, run:
+    ```
     $ python -m SimpleHTTPServer
+    ```
+    For *python3*, run:
+    ```
+    $ python -m http.server
     ```
 
 1. You'll need to be connected over HTTPS to access sensors (at least on iPhone), use ngrok to open up your web browser to the world via:
