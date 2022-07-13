@@ -1,0 +1,17 @@
+
+    {{#if devMode}}
+    <!-- If you add scripts here make sure they're also added in both Dockerfile.studio
+        and bin/deploy/deploy-assets.sh so they end up in the bundle! -->
+    <script type="text/javascript" src="{{cdnPrefix}}/smartphone/axios.js"></script>
+    <script type="text/javascript" src="{{cdnPrefix}}/smartphone/recorder.js"></script>
+    <script type="text/javascript" src="{{cdnPrefix}}/smartphone/sweetalert.min.js"></script>
+    <script type="text/javascript" src="{{cdnPrefix}}/build/client/bundle.js"></script>
+    {{else}}
+    <script src="{{cdnPrefix}}/smartphone/bundle.min.js"></script>
+    {{/if}}
+
+    <script nonce="{{nonce}}">
+        require('client/init').default('{{clientInitTag}}');
+    </script>
+</body>
+</html>

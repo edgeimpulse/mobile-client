@@ -1,0 +1,147 @@
+{{> header}}
+<body>
+    <div class="container-fluid">
+        <div class="row align-items-center border-bottom" id="header-row">
+            <div class="col-auto mt-3 mb-3 pr-0">
+                <img src="{{cdnPrefix}}/smartphone/mark.svg">
+            </div>
+            <div class="col align-middle">
+                <h1 class="text-dark mb-0 border-left pl-4">Classifier</h1>
+            </div>
+        </div>
+        <div class="row mt-4" id="loading-view">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-body text-center card-icon mt-4">
+                        <div class="sk-folding-cube">
+                            <div class="sk-cube1 sk-cube"></div>
+                            <div class="sk-cube2 sk-cube"></div>
+                            <div class="sk-cube4 sk-cube"></div>
+                            <div class="sk-cube3 sk-cube"></div>
+                        </div>
+                    </div>
+                    <div class="card-body text-center">
+                        <h2 id="loading-view-text">Loading...</h2>
+                    </div>
+                    <div class="card-body text-center pt-2 mb-2 text-monospace text-xs" id="build-progress" style="display: none">
+                        this._module.get_properties is not a function
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4" id="qrcode-view" style="display: none">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-body text-center text-light border-bottom card-icon pb-0">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                    <div class="card-body text-center pb-0">
+                        <h2>Go to the studio to begin</h2>
+                    </div>
+                    <div class="card-body text-center pt-2">
+                        Head to the <strong>devices</strong> page in the Edge Impulse studio,
+                        click <strong>Connect a new device</strong>, select <strong>Use your mobile phone</strong>
+                        and scan the QR code.
+                    </div>
+                    <div class="card-body text-center pt-0 mb-2">
+                        <small>Or append
+                            <span class="text-monospace">?apiKey=ei_...</span>
+                            to the URL to set your API key manually during development.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4" id="remote-mgmt-failed" style="display: none">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-body text-center mt-4">
+                        <div class="col text-center">
+                            <i class="far fa-times-circle text-warning" style="font-size: 10rem"></i>
+                        </div>
+                    </div>
+                    <div class="card-body text-center pb-0">
+                        <h2>Failed to load</h2>
+                    </div>
+                    <div class="card-body text-center pt-2 mb-2" id="connection-failed-message">
+                        Failed to authenticate.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4" id="permission-view" style="display: none">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-body text-center card-icon">
+                        <i class="fas fa-mobile text-light">
+                            <i class="fas fa-lock text-dark"></i>
+                        </i>
+                    </div>
+                    <div class="card-body text-center pb-0">
+                        <h2>Permission required</h2>
+                    </div>
+                    <div class="card-body text-center mb-4">
+                        <button type="button" class="btn btn-primary" id="grant-permissions-button">Give access to the accelerometer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-4" id="inferencing-in-progress" style="display: none">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-body text-center mt-5 mb-4" id="inferencing-sampling-body">
+                        <div class="col text-center">
+                            <div class="sampling-circle"></div>
+                            <div class="sampling-seconds-left text-gray" id="inferencing-time-left">2s</div>
+                        </div>
+                    </div>
+                    <div id="capture-camera" class="card-body text-center mb-0 py-0" style="display: none;">
+                        <div class="card-body text-center">
+                            <div class="capture-camera-inner">
+                                <video playsinline autoplay></video>
+                                <canvas style="display: none;"></canvas>
+                            </div>
+                        </div>
+                        <div class="card-body text-center mb-0 pt-0 pb-2">
+                            <button type="button" class="btn btn-lg pl-4 pr-4 btn-primary" id="capture-camera-button"><i class="fa fa-camera mr-2"></i>Classify</button>
+                        </div>
+                    </div>
+                    <div id="inference-recording-message-body" class="card-body text-center pb-0 pt-0">
+                        <h2 id="inferencing-recording-data-message">Recording data</h2>
+                    </div>
+                    <div class="card-body px-0 pb-0" id="inferencing-result" style="visibility: hidden">
+                        <table class="table align-items-center table-flush table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th scope="col" class="pl-4" style="width: 30px"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" id="inferencing-region">
+        <div class="col text-center mt-4">
+            <a class="btn btn-secondary" href="/index.html" id="switch-to-data-collection">Switch to data collection mode</a>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="row">
+            <div class="col text-center">
+                <div class="copyright text-center text-muted">
+                    <i class="fas fa-code"></i>
+                    This client is <a href="https://github.com/edgeimpulse/mobile-client" class="font-weight-bold" target="_blank">open source</a>.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+{{> bottom}}

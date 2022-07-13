@@ -18,23 +18,18 @@ To build:
     $ npm install
     ```
 
-1. Build the client:
+1. Build and serve the application:
 
     ```
-    $ npm run watch
+    $ npm run start
     ```
 
-1. Run a web server:
-
-    ```
-    $ cd public
-    $ python -m SimpleHTTPServer
-    ```
+    This automatically watches for changes in the code, and rebuilds the application.
 
 1. You'll need to be connected over HTTPS to access sensors (at least on iPhone), use ngrok to open up your web browser to the world via:
 
     ```
-    $ ngrok http 8000
+    $ ngrok http 4820
     ```
 
 Go to the HTTPS URL that ngrok printed to see the client.

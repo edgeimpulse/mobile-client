@@ -90,13 +90,24 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
             loaderText + '\n' +
             'return Module;\n' +
             '}';
-        loaderText = loaderText.replace('var wasmBinaryFile="edge-impulse-standalone.wasm"', '');
 
-        console.log('loaderText', loaderText);
+        loaderText = loaderText.replace('var wasmBinaryFile="edge-impulse-standalone.wasm"', '');
+        loaderText = loaderText.replace(`var wasmBinaryFile;\n  wasmBinaryFile = 'edge-impulse-standalone.wasm';`, '');
+
+        const loaderBlob = new Blob([ loaderText ], { type: 'text/javascript' });
 
         const script = document.createElement('script');
-        script.innerHTML = loaderText;
+        script.src = URL.createObjectURL(loaderBlob);
+
+        console.log('adding script with src', script.src);
+
         window.document.body.append(script);
+
+        // wait until script is loaded...
+        await new Promise<void>((resolve, reject) => {
+            script.addEventListener('load', () => resolve());
+            script.addEventListener('error', reject);
+        })
 
         const module = window.WasmLoader(wasmUrl);
         this.emit('status', 'Loaded WASM module');
@@ -107,7 +118,6 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         this.emit('status', 'Initialized classifier');
         return classifier;
     }
-
 
     async getProject(): Promise < {
         id: number;

@@ -17,8 +17,8 @@ declare global {
     }
 }
 const mobileClientLoader = async (mode:
-'data-collection' | 'classifier' | 'data-collection-camera' | 'data-collection-keyword' |
-'data-collection-microphone' | 'data-collection-accelerometer') => {
+    'data-collection' | 'classifier' | 'data-collection-camera' | 'data-collection-keyword' |
+    'data-collection-microphone' | 'data-collection-accelerometer') => {
 
     storeIngestionApi(getIngestionApi());
     storeRemoteManagementEndpoint(getRemoteManagementEndpoint());

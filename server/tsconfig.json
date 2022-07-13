@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "incremental": true,
+        "target": "es2017",
+        "module": "commonjs",
+        "esModuleInterop": true,
+        "outDir": "../build/server",
+        "strict": true,
+        "sourceMap": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true
+    },
+    "watchOptions": {
+        "watchFile": "useFsEvents",
+        "watchDirectory": "useFsEvents",
+        "fallbackPolling": "dynamicPriority"
+    },
+    "include": [
+        "**/*",
+        "../shared/**/*"
+    ]
+}

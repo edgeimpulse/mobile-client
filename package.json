@@ -4,9 +4,14 @@
   "description": "Mobile data acquisition and classification client for Edge Impulse",
   "private": true,
   "scripts": {
-    "start": "./node_modules/.bin/tsc-watch -p client --noClear & cd public && python -m SimpleHTTPServer 4820",
-    "build": "./node_modules/.bin/tsc -p client",
-    "lint": "eslint -c .eslintrc.js --ext .ts ./client",
+    "start": "./node_modules/.bin/tsc-watch -p server --onSuccess \"node --trace-warnings  build/server/start.js\" --noClear & ./node_modules/.bin/tsc-watch -p client --noClear",
+    "start-production": "node --trace-warnings  build/server/start.js",
+    "build": "./node_modules/.bin/tsc -p client && ./node_modules/.bin/tsc -p server",
+    "build-client": "./node_modules/.bin/tsc -p client",
+    "build-server": "./node_modules/.bin/tsc -p server",
+    "lint": "npm run lint-server && npm run lint-client",
+    "lint-server": "./node_modules/tslint/bin/tslint -p server/tsconfig.json",
+    "lint-client": "./node_modules/tslint/bin/tslint -p client/tsconfig.json",
     "watch": "./node_modules/.bin/tsc-watch -p client --noClear"
   },
   "repository": {
@@ -28,10 +33,22 @@
   },
   "homepage": "https://github.com/brianweet/edge-impulse-example-browser-device#readme",
   "dependencies": {
-    "axios": "0.19.2"
+    "@sentry/node": "5.27.3",
+    "axios": "0.19.2",
+    "compression": "1.7.4",
+    "cors": "2.8.5",
+    "express": "4.17.1",
+    "glob": "7.1.6",
+    "handlebars": "4.7.7",
+    "signalfx-tracing": "0.13.0"
   },
   "devDependencies": {
+    "@types/compression": "1.0.1",
+    "@types/cors": "2.8.6",
+    "@types/express": "4.17.13",
+    "@types/glob": "7.1.1",
     "@types/jquery": "3.5.1",
+    "@types/node": "16.11.7",
     "@typescript-eslint/eslint-plugin": "5.3.1",
     "@typescript-eslint/eslint-plugin-tslint": "5.3.1",
     "@typescript-eslint/parser": "5.3.1",
@@ -39,7 +56,8 @@
     "eslint-plugin-import": "2.25.2",
     "eslint-plugin-jsdoc": "37.0.3",
     "eslint-plugin-prefer-arrow": "1.2.3",
-    "tsc-watch": "4.2.9",
+    "tsc-watch": "4.6.2",
+    "terser": "4.4.3",
     "tslint": "6.1.3",
     "typescript": "4.1.3"
   }

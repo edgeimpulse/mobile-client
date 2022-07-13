@@ -5,7 +5,7 @@ import { MicrophoneSensor } from "./sensors/microphone";
 import { CameraSensor } from "./sensors/camera";
 import { Positional9DOFSensor } from "./sensors/9axisIMU";
 import { ClassificationLoader } from "./classification-loader";
-import { ClassificationResponse, EdgeImpulseClassifier } from "./classifier";
+import { ClassificationResponse, ClassifierProperties, EdgeImpulseClassifier } from "./classifier";
 import { Notify } from "./notify";
 import { MovingAverageFilter } from "./moving-average-filter";
 import { getErrorMsg } from "./utils";
@@ -94,7 +94,7 @@ export class ClassificationClientViews {
 
             this._elements.loadingText.textContent = 'Loading classifier...';
 
-            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+            // tslint:disable-next-line: no-floating-promises
             (async () => {
                 let loader = new ClassificationLoader(getStudioEndpoint(), getApiKey());
                 loader.on('status', msg => {
@@ -219,153 +219,6 @@ export class ClassificationClientViews {
                 this._elements.inferencingTimeLeft.textContent = 'Waiting';
                 this._elements.inferencingMessage.textContent = 'Starting in 2 seconds...';
 
-                const renderInferenceResults = async (res: ClassificationResponse, activeTimeout = 1000) => {
-                    if (this._firstInference && res.results.length > 0) {
-                        this._firstInference = false;
-                        this._isObjectDetection = typeof res.results[0].x === 'number';
-
-                        if (!this._isObjectDetection) {
-                            this._elements.inferencingResult.style.visibility = '';
-
-                            let thead = <HTMLElement>
-                                this._elements.inferencingResultTable.querySelector('thead tr');
-                            for (let e of res.results) {
-                                let th = document.createElement('th');
-                                th.scope = 'col';
-                                th.textContent = e.label;
-                                th.classList.add('px-0', 'text-center');
-                                thead.appendChild(th);
-                            }
-                            if (res.anomaly !== 0.0) {
-                                let th = document.createElement('th');
-                                th.scope = 'col';
-                                th.textContent = 'anomaly';
-                                th.classList.add('px-0', 'text-center');
-                                thead.appendChild(th);
-                            }
-
-                            if (thead.lastChild) {
-                                (<HTMLElement>thead.lastChild).classList.add('pr-4');
-                            }
-                        }
-                    }
-
-                    if (!this._isObjectDetection && res.results.length > 0) {
-                        let tbody = <HTMLElement>this._elements.inferencingResultTable.querySelector('tbody');
-                        let row = document.createElement('tr');
-                        row.innerHTML = '<td class="pl-4 pr-0">' + (++this._inferenceCount) + '</td>';
-                        row.classList.add('active');
-
-                        setTimeout(() => {
-                            row.classList.remove('active');
-                        }, activeTimeout);
-
-                        for (let e of res.results) {
-                            let td = document.createElement('td');
-                            td.textContent = e.value.toFixed(2);
-                            td.classList.add('px-0', 'text-center');
-                            if (Math.max(...res.results.map(v => v.value)) === e.value) {
-                                td.classList.add('font-weight-bold');
-                            }
-                            else {
-                                td.classList.add('text-gray');
-                            }
-
-                            row.appendChild(td);
-                        }
-
-                        if (res.anomaly !== 0.0) {
-                            let td = document.createElement('td');
-                            td.textContent = res.anomaly.toFixed(2);
-                            td.classList.add('px-0', 'text-center');
-                            row.appendChild(td);
-                        }
-
-                        if (row.lastChild) {
-                            (<HTMLElement>row.lastChild).classList.add('pr-4');
-                        }
-
-                        if (tbody.childNodes.length === 0) {
-                            tbody.appendChild(row);
-                        }
-                        else {
-                            tbody.insertBefore(row, tbody.firstChild);
-                        }
-                    }
-                    else {
-                        for (let bx of Array.from(
-                            this._elements.cameraInner.querySelectorAll('.bounding-box-container'))) {
-
-                            bx.parentNode?.removeChild(bx);
-                        }
-
-                        if (res.results.length === 0) {
-                            Notify.notify('', 'No objects found', 'top', 'center',
-                                'fas fa-exclamation-triangle', 'success');
-                        }
-
-                        let factor = Number(this._elements.cameraCanvas.height) /
-                            Number(this._elements.cameraVideo.clientHeight);
-
-                        for (let b of res.results) {
-                            if (typeof b.x !== 'number' ||
-                                typeof b.y !== 'number' ||
-                                typeof b.width !== 'number' ||
-                                typeof b.height !== 'number') {
-                                continue;
-                            }
-                            let bb = {
-                                x: b.x / factor,
-                                y: b.y / factor,
-                                width: b.width / factor,
-                                height: b.height / factor,
-                                label: b.label,
-                                value: b.value
-                            };
-
-                            if (!this._labelToColor[bb.label]) {
-                                this._labelToColor[bb.label] = this._colors[0];
-                                this._colors.splice(0, 1);
-                            }
-
-                            let color = this._labelToColor[bb.label];
-
-                            let el = document.createElement('div');
-                            el.classList.add('bounding-box-container');
-                            el.style.position = 'absolute';
-                            el.style.border = 'solid 3px ' + color;
-
-                            if (prop.modelType === 'object_detection') {
-                                el.style.width = (bb.width) + 'px';
-                                el.style.height = (bb.height) + 'px';
-                                el.style.left = (bb.x) + 'px';
-                                el.style.top = (bb.y) + 'px';
-                            }
-                            else if (prop.modelType === 'constrained_object_detection') {
-                                let centerX = bb.x + (bb.width / 2);
-                                let centerY = bb.y + (bb.height / 2);
-
-                                el.style.borderRadius = '10px';
-                                el.style.width = 20 + 'px';
-                                el.style.height = 20 + 'px';
-                                el.style.left = (centerX - 10) + 'px';
-                                el.style.top = (centerY - 10) + 'px';
-                            }
-
-                            let label = document.createElement('div');
-                            label.classList.add('bounding-box-label');
-                            label.style.background = color;
-                            label.textContent = bb.label + ' (' + bb.value.toFixed(2) + ')';
-                            if (prop.modelType === 'constrained_object_detection') {
-                                el.style.whiteSpace = 'nowrap';
-                            }
-                            el.appendChild(label);
-
-                            this._elements.cameraInner.appendChild(el);
-                        }
-                    }
-                };
-
                 const sampleNextWindow = async () => {
                     if (!sensor || !this._classifier) return;
 
@@ -441,7 +294,9 @@ export class ClassificationClientViews {
 
                         console.log('inference results', res);
 
-                        await renderInferenceResults(res);
+                        await this.renderInferenceResults(res, prop, {
+                            showNoObjectsFoundNotification: true,
+                        });
 
                         if (prop.sensor === 'camera') {
                             console.log('classification enable button again');
@@ -495,134 +350,17 @@ export class ClassificationClientViews {
                     }
                 };
 
-                const sampleAudioContinuous = async () => {
-                    if (!sensor || !this._classifier) return;
-                    if (prop.sensor !== 'microphone') {
-                        throw new Error('Sensor is not microphone, cannot do continuous audio sampling');
-                    }
-
-                    document.body.classList.add('continuous-audio');
-                    this._elements.inferencingTimeLeft.textContent = 'Listening...';
-
-                    let isClassifying = false;
-                    let last = Date.now();
-                    // should be 250ms. but if not, make it align to window,
-                    // e.g. if 800ms. then we use 200ms.
-                    let sampleLength = 250 - (sampleWindowLength % 250);
-                    let maf: MovingAverageFilter | undefined;
-
-                    let lastFiveResults: string[] = [];
-
-                    const classify = async (data: number[]) => {
-                        try {
-                            if (!this._classifier) return;
-                            if (isClassifying) return; // avoid overload on slow devices
-
-                            isClassifying = true;
-
-                            console.log(Date.now() - last, 'data', data.length);
-                            last = Date.now();
-
-                            console.time('inferencing');
-                            let res = this._classifier.classify(data, false);
-                            console.timeEnd('inferencing');
-
-                            console.log('inference results', res);
-
-                            // Disabled: few-shot KWS does better on short words with MAF disabled
-
-                            // console.log('inference results before MAF', res);
-                            // if (!maf) {
-                            //     maf = new MovingAverageFilter(4, res.results.map(x => x.label));
-                            // }
-                            // res = maf.run(res);
-                            // console.log('inference results after MAF', res);
-
-                            await renderInferenceResults(res, sampleLength);
-
-                            // if we have 3 classes (unknown/noise/XXX) then we only show something
-                            // when XXX is detected...
-                            let resKeys = res.results.map(x => x.label);
-                            if (resKeys.length === 3 && resKeys.indexOf('unknown') > -1 &&
-                                resKeys.indexOf('noise') > -1) {
-
-                                let keyword = resKeys.find(x => x !== 'noise' && x !== 'unknown');
-                                let keywordRes = keyword ? res.results.find(x => x.label === keyword) : undefined;
-                                if (keywordRes && keywordRes.value >= 0.8) {
-                                    lastFiveResults.push(keywordRes.label);
-                                }
-                                else {
-                                    lastFiveResults.push('...');
-                                }
-
-                                // saw the keyword in the last 5 results? then print it
-                                if (lastFiveResults.length > 5) {
-                                    lastFiveResults = lastFiveResults.slice(1);
-                                }
-
-                                if (keywordRes && lastFiveResults.indexOf(keywordRes.label) > -1) {
-                                    this._elements.inferencingMessage.textContent = keywordRes.label;
-                                }
-                                else {
-                                    this._elements.inferencingMessage.textContent = '...';
-                                }
-                            }
-                            // otherwise just print highest >= 0.8
-                            else {
-                                let highest = res.results.find(x => x.value >= 0.8);
-                                if (highest) {
-                                    this._elements.inferencingMessage.textContent = highest.label;
-                                }
-                                else {
-                                    this._elements.inferencingMessage.textContent = 'uncertain';
-                                }
-                            }
-
-                            isClassifying = false;
-                        }
-                        catch (ex2) {
-                            let ex = <Error>ex2;
-                            this._elements.connectionFailedMessage.textContent = ex.message || ex.toString();
-                            this.switchView(this._views.connectionFailed);
-                        }
-                    };
-
-                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                    (async () => {
-                        try {
-                            let allData: number[] = [];
-
-                            while (1) {
-                                let samplingOptions: ISamplingOptions = {
-                                    length: sampleLength,
-                                    frequency: prop.frequency,
-                                    continuousMode: true
-                                };
-                                let data = await sensor.takeSample(samplingOptions);
-                                let d = <number[]>data.values;
-                                allData = allData.concat(d);
-                                if (allData.length >= prop.inputFeaturesCount) {
-                                    // we do this in a setTimeout so we go read immediately again
-                                    setTimeout(() => {
-                                        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                                        classify(allData.slice(allData.length - prop.inputFeaturesCount));
-                                    }, 0);
-                                }
-                            }
-                        }
-                        catch (ex2) {
-                            let ex = <Error>ex2;
-                            this._elements.connectionFailedMessage.textContent = ex.message || ex.toString();
-                            this.switchView(this._views.connectionFailed);
-                        }
-                    })();
-                };
-
                 if (prop.sensor === 'camera') {
-                    setTimeout(sampleNextWindow, 0);
+                    if (prop.modelType === 'object_detection') {
+                        // MobileNet SSD should not run continuously (will be too slow)
+                        setTimeout(sampleNextWindow, 0);
+                    }
+                    else {
+                        return this.sampleImagesContinuous(<CameraSensor>sensor, prop);
+                    }
                 }
-                else if (prop.sensor === 'microphone') {
-                    return sampleAudioContinuous();
+                else if (prop.sensor === 'microphone' && sensor) {
+                    return this.sampleAudioContinuous(sensor, prop);
                 }
                 else {
                     setTimeout(sampleNextWindow, 2000);
@@ -643,4 +381,341 @@ export class ClassificationClientViews {
             setTimeout(resolve, ms);
         });
     }
+
+    private async sampleAudioContinuous(sensor: ISensor, prop: ClassifierProperties) {
+        if (!sensor || !this._classifier) return;
+        if (prop.sensor !== 'microphone') {
+            throw new Error('Sensor is not microphone, cannot do continuous audio sampling');
+        }
+
+        const sampleWindowLength = prop.inputFeaturesCount * (1000 / prop.frequency);
+
+        document.body.classList.add('continuous-audio');
+        this._elements.inferencingTimeLeft.textContent = 'Listening...';
+
+        let isClassifying = false;
+        let last = Date.now();
+        // should be 250ms. but if not, make it align to window,
+        // e.g. if 800ms. then we use 200ms.
+        let sampleLength = 250 - (sampleWindowLength % 250);
+        let maf: MovingAverageFilter | undefined;
+
+        let lastFiveResults: string[] = [];
+
+        const classify = async (data: number[]) => {
+            try {
+                if (!this._classifier) return;
+                if (isClassifying) return; // avoid overload on slow devices
+
+                isClassifying = true;
+
+                console.log(Date.now() - last, 'data', data.length);
+                last = Date.now();
+
+                console.time('inferencing');
+                let res = this._classifier.classify(data, false);
+                console.timeEnd('inferencing');
+
+                console.log('inference results', res);
+
+                // Disabled: few-shot KWS does better on short words with MAF disabled
+
+                // console.log('inference results before MAF', res);
+                // if (!maf) {
+                //     maf = new MovingAverageFilter(4, res.results.map(x => x.label));
+                // }
+                // res = maf.run(res);
+                // console.log('inference results after MAF', res);
+
+                await this.renderInferenceResults(res, prop, {
+                    activeTimeout: sampleLength,
+                    showNoObjectsFoundNotification: true
+                });
+
+                // if we have 3 classes (unknown/noise/XXX) then we only show something
+                // when XXX is detected...
+                let resKeys = res.results.map(x => x.label);
+                if (resKeys.length === 3 && resKeys.indexOf('unknown') > -1 &&
+                    resKeys.indexOf('noise') > -1) {
+
+                    let keyword = resKeys.find(x => x !== 'noise' && x !== 'unknown');
+                    let keywordRes = keyword ? res.results.find(x => x.label === keyword) : undefined;
+                    if (keywordRes && keywordRes.value >= 0.8) {
+                        lastFiveResults.push(keywordRes.label);
+                    }
+                    else {
+                        lastFiveResults.push('...');
+                    }
+
+                    // saw the keyword in the last 5 results? then print it
+                    if (lastFiveResults.length > 5) {
+                        lastFiveResults = lastFiveResults.slice(1);
+                    }
+
+                    if (keywordRes && lastFiveResults.indexOf(keywordRes.label) > -1) {
+                        this._elements.inferencingMessage.textContent = keywordRes.label;
+                    }
+                    else {
+                        this._elements.inferencingMessage.textContent = '...';
+                    }
+                }
+                // otherwise just print highest >= 0.8
+                else {
+                    let highest = res.results.find(x => x.value >= 0.8);
+                    if (highest) {
+                        this._elements.inferencingMessage.textContent = highest.label;
+                    }
+                    else {
+                        this._elements.inferencingMessage.textContent = 'uncertain';
+                    }
+                }
+
+                isClassifying = false;
+            }
+            catch (ex2) {
+                let ex = <Error>ex2;
+                this._elements.connectionFailedMessage.textContent = ex.message || ex.toString();
+                this.switchView(this._views.connectionFailed);
+            }
+        };
+
+        // tslint:disable-next-line: no-floating-promises
+        (async () => {
+            try {
+                let allData: number[] = [];
+
+                while (1) {
+                    let samplingOptions: ISamplingOptions = {
+                        length: sampleLength,
+                        frequency: prop.frequency,
+                        continuousMode: true
+                    };
+                    let data = await sensor.takeSample(samplingOptions);
+                    let d = <number[]>data.values;
+                    allData = allData.concat(d);
+                    if (allData.length >= prop.inputFeaturesCount) {
+                        // we do this in a setTimeout so we go read immediately again
+                        setTimeout(() => {
+                            // tslint:disable-next-line: no-floating-promises
+                            classify(allData.slice(allData.length - prop.inputFeaturesCount));
+                        }, 0);
+                    }
+                }
+            }
+            catch (ex2) {
+                let ex = <Error>ex2;
+                this._elements.connectionFailedMessage.textContent = ex.message || ex.toString();
+                this.switchView(this._views.connectionFailed);
+            }
+        })();
+    }
+
+    private async sampleImagesContinuous(sensor: CameraSensor, prop: ClassifierProperties) {
+        if (!this._classifier) return;
+
+        while (1) {
+            let samplingOptions: ISamplingOptions = {
+                mode: 'raw',
+                inputWidth: prop.imageInputWidth,
+                inputHeight: prop.imageInputHeight,
+            };
+
+            this._elements.inferenceCaptureButton.innerHTML =
+                '<i class="fa fa-camera mr-2"></i>Inferencing...';
+            this._elements.inferenceCaptureButton.classList.add('disabled');
+
+            let data = await sensor.takeSnapshot(samplingOptions);
+
+            await this.sleep(1);
+
+            let d: number[];
+            if (data.values[0] instanceof Array) {
+                d = (<number[][]>data.values).reduce((curr, v) => curr.concat(v), []);
+            }
+            else {
+                d = <number[]>data.values;
+            }
+
+            // console.log('raw data', d.length, d);
+
+            console.time('inferencing');
+            let res = this._classifier.classify(d, false);
+            console.timeEnd('inferencing');
+
+            console.log('inference results', res);
+
+            await this.renderInferenceResults(res, prop, {
+                showNoObjectsFoundNotification: false,
+            });
+
+            console.log('prop.modelType', prop.modelType);
+
+            if (prop.modelType === 'classification') {
+                this._elements.inferenceRecordingMessageBody.style.display = '';
+                this._elements.inferenceRecordingMessageBody.classList.remove('pt-0');
+                this._elements.inferenceRecordingMessageBody.classList.add('pt-4');
+                let highest = res.results.find(x => x.value >= 0.8);
+                if (highest) {
+                    this._elements.inferencingMessage.textContent = highest.label;
+                }
+                else {
+                    this._elements.inferencingMessage.textContent = 'uncertain';
+                }
+            }
+        }
+    }
+
+    private async renderInferenceResults(res: ClassificationResponse,
+        prop: ClassifierProperties,
+        opts: {
+            activeTimeout?: number;
+            showNoObjectsFoundNotification: boolean;
+        }) {
+        const activeTimeout = opts.activeTimeout || 1000;
+
+        if (this._firstInference && res.results.length > 0) {
+            this._firstInference = false;
+            this._isObjectDetection = typeof res.results[0].x === 'number';
+
+            if (!this._isObjectDetection) {
+                this._elements.inferencingResult.style.visibility = '';
+
+                let thead = <HTMLElement>
+                    this._elements.inferencingResultTable.querySelector('thead tr');
+                for (let e of res.results) {
+                    let th = document.createElement('th');
+                    th.scope = 'col';
+                    th.textContent = e.label;
+                    th.classList.add('px-0', 'text-center');
+                    thead.appendChild(th);
+                }
+                if (res.anomaly !== 0.0) {
+                    let th = document.createElement('th');
+                    th.scope = 'col';
+                    th.textContent = 'anomaly';
+                    th.classList.add('px-0', 'text-center');
+                    thead.appendChild(th);
+                }
+
+                if (thead.lastChild) {
+                    (<HTMLElement>thead.lastChild).classList.add('pr-4');
+                }
+            }
+        }
+
+        if (!this._isObjectDetection && res.results.length > 0) {
+            let tbody = <HTMLElement>this._elements.inferencingResultTable.querySelector('tbody');
+            let row = document.createElement('tr');
+            row.innerHTML = '<td class="pl-4 pr-0">' + (++this._inferenceCount) + '</td>';
+            row.classList.add('active');
+
+            setTimeout(() => {
+                row.classList.remove('active');
+            }, activeTimeout);
+
+            for (let e of res.results) {
+                let td = document.createElement('td');
+                td.textContent = e.value.toFixed(2);
+                td.classList.add('px-0', 'text-center');
+                if (Math.max(...res.results.map(v => v.value)) === e.value) {
+                    td.classList.add('font-weight-bold');
+                }
+                else {
+                    td.classList.add('text-gray');
+                }
+
+                row.appendChild(td);
+            }
+
+            if (res.anomaly !== 0.0) {
+                let td = document.createElement('td');
+                td.textContent = res.anomaly.toFixed(2);
+                td.classList.add('px-0', 'text-center');
+                row.appendChild(td);
+            }
+
+            if (row.lastChild) {
+                (<HTMLElement>row.lastChild).classList.add('pr-4');
+            }
+
+            if (tbody.childNodes.length === 0) {
+                tbody.appendChild(row);
+            }
+            else {
+                tbody.insertBefore(row, tbody.firstChild);
+            }
+        }
+        else {
+            for (let bx of Array.from(
+                this._elements.cameraInner.querySelectorAll('.bounding-box-container'))) {
+
+                bx.parentNode?.removeChild(bx);
+            }
+
+            if (res.results.length === 0 && opts.showNoObjectsFoundNotification) {
+                Notify.notify('', 'No objects found', 'top', 'center',
+                    'fas fa-exclamation-triangle', 'success');
+            }
+
+            let factor = Number(this._elements.cameraCanvas.height) /
+                Number(this._elements.cameraVideo.clientHeight);
+
+            for (let b of res.results) {
+                if (typeof b.x !== 'number' ||
+                    typeof b.y !== 'number' ||
+                    typeof b.width !== 'number' ||
+                    typeof b.height !== 'number') {
+                    continue;
+                }
+                let bb = {
+                    x: b.x / factor,
+                    y: b.y / factor,
+                    width: b.width / factor,
+                    height: b.height / factor,
+                    label: b.label,
+                    value: b.value
+                };
+
+                if (!this._labelToColor[bb.label]) {
+                    this._labelToColor[bb.label] = this._colors[0];
+                    this._colors.splice(0, 1);
+                }
+
+                let color = this._labelToColor[bb.label];
+
+                let el = document.createElement('div');
+                el.classList.add('bounding-box-container');
+                el.style.position = 'absolute';
+                el.style.border = 'solid 3px ' + color;
+
+                if (prop.modelType === 'object_detection') {
+                    el.style.width = (bb.width) + 'px';
+                    el.style.height = (bb.height) + 'px';
+                    el.style.left = (bb.x) + 'px';
+                    el.style.top = (bb.y) + 'px';
+                }
+                else if (prop.modelType === 'constrained_object_detection') {
+                    let centerX = bb.x + (bb.width / 2);
+                    let centerY = bb.y + (bb.height / 2);
+
+                    el.style.borderRadius = '10px';
+                    el.style.width = 20 + 'px';
+                    el.style.height = 20 + 'px';
+                    el.style.left = (centerX - 10) + 'px';
+                    el.style.top = (centerY - 10) + 'px';
+                }
+
+                let label = document.createElement('div');
+                label.classList.add('bounding-box-label');
+                label.style.background = color;
+                label.textContent = bb.label + ' (' + bb.value.toFixed(2) + ')';
+                if (prop.modelType === 'constrained_object_detection') {
+                    el.style.whiteSpace = 'nowrap';
+                }
+                el.appendChild(label);
+
+                this._elements.cameraInner.appendChild(el);
+            }
+        }
+    };
 }

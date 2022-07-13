@@ -1,2 +1,5 @@
+build/
 node_modules/
 public/build/
+build/
+public/smartphone/bundle.min.js

@@ -7,6 +7,23 @@ export enum EiSerialSensor {
     EI_CLASSIFIER_SENSOR_ENVIRONMENTAL       = 5,
 }
 
+export type ClassifierPropertiesSensor = 'accelerometer' | 'microphone' | 'camera' | 'positional';
+
+export interface ClassifierProperties {
+    sensor: ClassifierPropertiesSensor;
+    frequency: number;
+    inputFeaturesCount: number;
+    imageInputWidth: number;
+    imageInputHeight: number;
+    imageInputFrames: number;
+    imageInputChannelCount: number;
+    intervalMs: number;
+    axisCount: number;
+    labelCount: number;
+    modelType: 'classification' | 'object_detection' | 'constrained_object_detection';
+    hasAnomaly: boolean;
+}
+
 export interface WasmRuntimeModule {
     HEAPU8: {
         buffer: Uint8Array;
@@ -38,7 +55,7 @@ export interface WasmRuntimeModule {
         axis_count: number;
         label_count: number;
         sensor: EiSerialSensor;
-        model_type: 'classifier' | 'object_detection' | 'constrained_object_detection';
+        model_type: 'classification' | 'object_detection' | 'constrained_object_detection';
     };
     get_project(): {
         id: number;
@@ -77,10 +94,10 @@ export class EdgeImpulseClassifier {
         });
     }
 
-    getProperties() {
+    getProperties(): ClassifierProperties {
         const ret = this._module.get_properties();
 
-        let sensor;
+        let sensor: ClassifierPropertiesSensor;
         if (ret.sensor === EiSerialSensor.EI_CLASSIFIER_SENSOR_ACCELEROMETER) {
             sensor = "accelerometer";
         }
