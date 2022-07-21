@@ -1,11 +1,5 @@
 {
-    "extends": "../../tslint.json",
-    "linterOptions": {
-        "exclude": [
-            "**/*.js",
-            "./api-definition/**"
-        ]
-    },
+    "extends": "../tslint.json",
     "rules": {
         "no-console": true
     }

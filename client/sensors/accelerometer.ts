@@ -124,5 +124,5 @@ export class AccelerometerSensor implements ISensor {
 
             window.addEventListener('devicemotion', newSensorEvent);
         });
-    };
+    }
 }

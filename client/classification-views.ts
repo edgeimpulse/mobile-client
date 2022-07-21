@@ -717,5 +717,5 @@ export class ClassificationClientViews {
                 this._elements.cameraInner.appendChild(el);
             }
         }
-    };
+    }
 }

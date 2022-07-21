@@ -107,7 +107,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         await new Promise<void>((resolve, reject) => {
             script.addEventListener('load', () => resolve());
             script.addEventListener('error', reject);
-        })
+        });
 
         const module = window.WasmLoader(wasmUrl);
         this.emit('status', 'Loaded WASM module');
