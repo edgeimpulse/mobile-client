@@ -113,7 +113,6 @@ export class ClassificationClientViews {
                 });
                 try {
                     this._classifier = await loader.load();
-
                     let props = this._classifier.getProperties();
 
                     if (props.sensor === 'microphone' && !(await microphone.hasSensor())) {
@@ -657,8 +656,11 @@ export class ClassificationClientViews {
                     'fas fa-exclamation-triangle', 'success');
             }
 
-            let factor = Number(this._elements.cameraCanvas.height) /
+            let heightFactor = Number(this._elements.cameraCanvas.height) /
                 Number(this._elements.cameraVideo.clientHeight);
+
+            let widthFactor = Number(this._elements.cameraCanvas.width) /
+                Number(this._elements.cameraVideo.clientWidth);
 
             for (let b of res.results) {
                 if (typeof b.x !== 'number' ||
@@ -668,10 +670,10 @@ export class ClassificationClientViews {
                     continue;
                 }
                 let bb = {
-                    x: b.x / factor,
-                    y: b.y / factor,
-                    width: b.width / factor,
-                    height: b.height / factor,
+                    x: b.x / widthFactor,
+                    y: b.y / heightFactor,
+                    width: b.width / widthFactor,
+                    height: b.height / heightFactor,
                     label: b.label,
                     value: b.value
                 };
