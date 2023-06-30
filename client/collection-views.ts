@@ -1,4 +1,4 @@
-import { getApiKey, getDeviceId, storeApiKey, storeDeviceId } from "./settings";
+import { getAuth, getDeviceId, storeApiKey, storeDeviceId } from "./settings";
 import { RemoteManagementConnection } from "./remote-mgmt";
 import { ISensor } from "./sensors/isensor";
 import { AccelerometerSensor } from "./sensors/accelerometer";
@@ -56,12 +56,15 @@ export class DataCollectionClientViews {
             this._sensors.push(imu9DOF);
         }
 
-        if (getApiKey()) {
+        const auth = getAuth();
+
+        // requires api key for data collection
+        if (auth?.auth === 'apiKey') {
             this.switchView(this._views.loading);
             this._elements.loadingText.textContent = 'Connecting to Edge Impulse...';
 
             const connection = new RemoteManagementConnection({
-                apiKey: getApiKey(),
+                apiKey: auth.apiKey,
                 device: {
                     deviceId: getDeviceId(),
                     sensors: this._sensors.map(s => {
@@ -78,7 +81,7 @@ export class DataCollectionClientViews {
 
             connection.on('connected', () => {
                 // persist keys now...
-                storeApiKey(getApiKey());
+                storeApiKey(auth.apiKey);
                 window.history.replaceState(null, '', window.location.pathname);
 
                 this._elements.deviceId.textContent = getDeviceId();

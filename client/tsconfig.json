@@ -23,6 +23,7 @@
         "../js-libs/ziplib/*.js",
         "../js-libs/jquery.min.js",
         "../js-libs/bootstrap-notify.js",
+        "../js-libs/wasm-feature-detect.js",
         "./**/*"
     ],
     "exclude": ["build", "node_modules", "coverage"]

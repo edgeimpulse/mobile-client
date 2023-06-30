@@ -3,6 +3,7 @@ import { EdgeImpulseClassifier } from "./classifier";
 import { AxiosStatic } from '../node_modules/axios';
 import { getErrorMsg } from './utils';
 import { WasmRuntimeModule } from './classifier';
+import { ApiAuth } from "./settings";
 
 declare let axios: AxiosStatic;
 
@@ -10,19 +11,27 @@ declare global {
     interface Window {
         WasmLoader: (wasmUrl: string) => WasmRuntimeModule;
         blb: Blob;
+        wasmFeatureDetect: {
+            simd: () => Promise<boolean>;
+        };
     }
 }
 
 export class ClassificationLoader extends Emitter<{ status: [string]; buildProgress: [string | null] }> {
     private _studioHost: string;
     private _wsHost: string;
-    private _apiKey: string;
+    private _auth: ApiAuth;
+    private _project: { id: number, owner: string, name: string, studioUrl: string } | undefined;
 
-    constructor(studioHostUrl: string, apiKey: string) {
+    constructor(studioHostUrl: string, auth: ApiAuth) {
         super();
         this._studioHost = studioHostUrl + '/v1/api';
         this._wsHost = studioHostUrl.replace('http', 'ws');
-        this._apiKey = apiKey;
+        this._auth = auth;
+    }
+
+    getProjectInfo() {
+        return this._project;
     }
 
     async load() {
@@ -32,14 +41,23 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         if (!project) {
             throw new Error('Could not find any projects');
         }
+        this._project = project;
 
         const projectId = project.id;
+
+        let deployType: 'wasm' | 'wasm-browser-simd';
+        if (await window.wasmFeatureDetect.simd()) {
+            deployType = 'wasm-browser-simd';
+        }
+        else {
+            deployType = 'wasm';
+        }
 
         let blob: Blob;
         this.emit('status', 'Downloading deployment...');
 
         try {
-            blob = await this.downloadDeployment(projectId);
+            blob = await this.downloadDeployment(projectId, deployType);
         }
         catch (ex) {
             let m = getErrorMsg(ex);
@@ -49,11 +67,11 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
 
             this.emit('status', 'Building project...');
 
-            await this.buildDeployment(projectId);
+            await this.buildDeployment(projectId, deployType);
 
             this.emit('status', 'Downloading deployment...');
 
-            blob = await this.downloadDeployment(projectId);
+            blob = await this.downloadDeployment(projectId, deployType);
         }
 
         console.log('blob', blob);
@@ -121,29 +139,64 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
 
     async getProject(): Promise < {
         id: number;
+        owner: string;
         name: string;
+        studioUrl: string;
     } > {
-        return new Promise((resolve, reject) => {
-            const x = new XMLHttpRequest();
-            x.open('GET', `${this._studioHost}/projects`);
-            x.onload = () => {
-                if (x.status !== 200) {
-                    reject('No projects found: ' + x.status + ' - ' + JSON.stringify(x.response));
-                }
-                else {
-                    if (!x.response.success) {
-                        reject(x.response.error);
+        if (this._auth.auth === 'apiKey') {
+            return new Promise((resolve, reject) => {
+                const x = new XMLHttpRequest();
+                x.open('GET', `${this._studioHost}/projects`);
+                x.onload = () => {
+                    if (x.status !== 200) {
+                        reject('No projects found: ' + x.status + ' - ' + JSON.stringify(x.response));
                     }
                     else {
-                        resolve(x.response.projects[0]);
+                        if (!x.response.success) {
+                            reject(x.response.error);
+                        }
+                        else {
+                            resolve(x.response.projects[0]);
+                        }
                     }
+                };
+                x.onerror = err => reject(err);
+                x.responseType = 'json';
+                if (this._auth.auth === 'apiKey') {
+                    x.setRequestHeader('x-api-key', this._auth.apiKey);
                 }
-            };
-            x.onerror = err => reject(err);
-            x.responseType = 'json';
-            x.setRequestHeader('x-api-key', this._apiKey);
-            x.send();
-        });
+                x.send();
+            });
+        }
+        else {
+            const projectId = this._auth.projectId;
+
+            return new Promise((resolve, reject) => {
+                const x = new XMLHttpRequest();
+                x.open('GET', `${this._studioHost}/${projectId}/public-info`);
+                x.onload = () => {
+                    if (x.status !== 200) {
+                        reject('No projects found: ' + x.status + ' - ' + JSON.stringify(x.response));
+                    }
+                    else {
+                        if (!x.response.success) {
+                            reject(x.response.error);
+                        }
+                        else {
+                            resolve({
+                                id: x.response.id,
+                                name: x.response.name,
+                                owner: x.response.owner,
+                                studioUrl: x.response.studioUrl
+                            });
+                        }
+                    }
+                };
+                x.onerror = err => reject(err);
+                x.responseType = 'json';
+                x.send();
+            });
+        }
     }
 
     async getDevelopmentKeys(projectId: number): Promise <{
@@ -171,15 +224,17 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
             };
             x.onerror = err => reject(err);
             x.responseType = 'json';
-            x.setRequestHeader('x-api-key', this._apiKey);
+            if (this._auth.auth === 'apiKey') {
+                x.setRequestHeader('x-api-key', this._auth.apiKey);
+            }
             x.send();
         });
     }
 
-    private async downloadDeployment(projectId: number): Promise < Blob > {
+    private async downloadDeployment(projectId: number, deployType: 'wasm' | 'wasm-browser-simd'): Promise < Blob > {
         return new Promise((resolve, reject) => {
             const x = new XMLHttpRequest();
-            x.open('GET', `${this._studioHost}/${projectId}/deployment/download?type=wasm&modelType=float32`);
+            x.open('GET', `${this._studioHost}/${projectId}/deployment/download?type=${deployType}&modelType=float32`);
             x.onload = () => {
                 if (x.status !== 200) {
                     const reader = new FileReader();
@@ -194,12 +249,18 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
             };
             x.onerror = err => reject(err);
             x.responseType = 'blob';
-            x.setRequestHeader('x-api-key', this._apiKey);
+            if (this._auth.auth === 'apiKey') {
+                x.setRequestHeader('x-api-key', this._auth.apiKey);
+            }
             x.send();
         });
     }
 
-    private async buildDeployment(projectId: number) {
+    private async buildDeployment(projectId: number, deployType: 'wasm' | 'wasm-browser-simd') {
+        if (this._auth.auth !== 'apiKey') {
+            throw new Error('Cannot build deployment if not authenticated via API key');
+        }
+
         let ws = await this.getWebsocket(projectId);
 
         // select f32 models for all keras blocks
@@ -207,7 +268,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
             url: `${this._studioHost}/${projectId}/impulse`,
             method: 'GET',
             headers: {
-                "x-api-key": this._apiKey,
+                "x-api-key": this._auth.apiKey,
                 "Content-Type": "application/json"
             }
         });
@@ -216,10 +277,10 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         }
 
         let jobRes = await axios({
-            url: `${this._studioHost}/${projectId}/jobs/build-ondevice-model?type=wasm`,
+            url: `${this._studioHost}/${projectId}/jobs/build-ondevice-model?type=${deployType}`,
             method: "POST",
             headers: {
-                "x-api-key": this._apiKey,
+                "x-api-key": this._auth.apiKey,
                 "Content-Type": "application/json"
             },
             data: {
@@ -248,11 +309,15 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
 
             let checkJobStatusIv = setInterval(async () => {
                 try {
+                    if (this._auth.auth !== 'apiKey') {
+                        throw new Error('Cannot build deployment if not authenticated via API key');
+                    }
+
                     let jobStatus = await axios({
                         url: `${this._studioHost}/${projectId}/jobs/${jobId}/status`,
                         method: "GET",
                         headers: {
-                            "x-api-key": this._apiKey,
+                            "x-api-key": this._auth.apiKey,
                             "Content-Type": "application/json"
                         }
                     });
@@ -343,13 +408,17 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
     }
 
     private async getWebsocket(projectId: number): Promise<WebSocket> {
+        let headers: { [k: string]: string } = {
+            "Content-Type": "application/json"
+        };
+        if (this._auth.auth === 'apiKey') {
+            headers["x-api-key"] = this._auth.apiKey;
+        }
+
         let tokenRes = await axios({
             url: `${this._studioHost}/${projectId}/socket-token`,
             method: "GET",
-            headers: {
-                "x-api-key": this._apiKey,
-                "Content-Type": "application/json"
-            }
+            headers: headers,
         });
         if (tokenRes.status !== 200) {
             throw new Error('Failed to acquire socket token: ' + tokenRes.status + ' - ' + tokenRes.statusText);

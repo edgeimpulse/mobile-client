@@ -13,10 +13,47 @@ const LS_STUDIO_ENDPOINT = 'studioEndpoint';
 const getRandomString = () =>
     Date.now().toString(36);
 
-export const getApiKey = () =>
-    new URLSearchParams(window.location.search).get('apiKey') ||
-    localStorage.getItem(LS_API_KEY) ||
-    '';
+export type ApiAuth = {
+    auth: 'apiKey',
+    apiKey: string
+} | {
+    auth: 'publicProject',
+    projectId: number,
+};
+
+export function getAuth(): ApiAuth | undefined {
+    const apiKeyQs = new URLSearchParams(window.location.search).get('apiKey');
+    const projectIdQs = new URLSearchParams(window.location.search).get('publicProjectId');
+    const apiKeyLocalStorage = localStorage.getItem(LS_API_KEY);
+
+    // api key in qs? go ahead.
+    if (apiKeyQs) {
+        return {
+            auth: 'apiKey',
+            apiKey: apiKeyQs
+        };
+    }
+
+    // project id in qs? then use that
+    if (projectIdQs) {
+        return {
+            auth: 'publicProject',
+            projectId: Number(projectIdQs)
+        };
+    }
+
+    // api key in local storage? use that (for refresh etc.)
+    if (apiKeyLocalStorage) {
+        return {
+            auth: 'apiKey',
+            apiKey: apiKeyLocalStorage
+        };
+    }
+
+    // otherwise return empty so we'll show error
+    return undefined;
+}
+
 export const storeApiKey = (apiKey: string) => {
     console.log('storeApiKey', apiKey, window.location.search);
     localStorage.setItem(LS_API_KEY, apiKey);

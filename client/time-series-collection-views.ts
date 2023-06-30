@@ -1,4 +1,4 @@
-import { getApiKey, getDeviceId, storeApiKey, storeDeviceId, getStudioEndpoint } from "./settings";
+import { getAuth, getDeviceId, storeApiKey, storeDeviceId, getStudioEndpoint, ApiAuth } from "./settings";
 import { ISensor } from "./sensors/isensor";
 import { Uploader } from "./uploader";
 import { SampleDetails } from "./models";
@@ -42,6 +42,7 @@ export class TimeSeriesDataCollectionClientViews {
     private _uploader: Uploader | undefined;
     private _hmacKey: string = '0';
     private _activeSensor: 'microphone' | 'accelerometer' | undefined;
+    private _auth: ApiAuth | undefined;
 
     async init(sensorType: 'microphone' | 'accelerometer') {
         console.log('init time-series-collection-views');
@@ -84,14 +85,18 @@ export class TimeSeriesDataCollectionClientViews {
         this._elements.categoryText.parentNode?.insertBefore(this._elements.categorySelect,
             this._elements.categoryText);
 
+        const auth = this._auth = getAuth();
 
-        if (getApiKey()) {
-            storeApiKey(getApiKey());
+        // data collection can only be done with apiKey
+        if (auth && auth.auth === 'apiKey') {
+            storeApiKey(auth.apiKey);
+
+            window.history.replaceState(null, '', window.location.pathname);
 
             try {
                 this.switchView(this._views.loading);
 
-                let devKeys = await this.getDevelopmentApiKeys(getApiKey());
+                let devKeys = await this.getDevelopmentApiKeys(auth.apiKey);
                 if (devKeys.hmacKey) {
                     this._hmacKey = devKeys.hmacKey;
                 }
@@ -104,7 +109,7 @@ export class TimeSeriesDataCollectionClientViews {
                     || 'split';
                 this._elements.categorySelect.value = this._elements.categoryText.textContent;
 
-                this._uploader = new Uploader(getApiKey());
+                this._uploader = new Uploader(auth.apiKey);
 
                 this._elements.grantPermission.textContent = `Give access to the ${sensorType}`;
 
@@ -142,6 +147,10 @@ export class TimeSeriesDataCollectionClientViews {
             let samplingInterval: number | undefined;
 
             try {
+                if (!this._auth || this._auth.auth !== 'apiKey') {
+                    throw new Error('Not authenticated');
+                }
+
                 this._elements.recordButton.innerHTML = `<i class="fas ${sensorIcon} mr-2"></i>Waiting...`;
                 this._elements.recordButton.classList.add('disabled');
 
@@ -204,7 +213,7 @@ export class TimeSeriesDataCollectionClientViews {
                 };
 
                 let data = dataMessage({
-                    apiKey: getApiKey(),
+                    apiKey: this._auth.apiKey,
                     device: {
                         deviceId: getDeviceId(),
                         sensors: [ activeSensor ].map(s => {
@@ -363,7 +372,10 @@ export class TimeSeriesDataCollectionClientViews {
     }
 
     private async getDevelopmentApiKeys(apiKey: string) {
-        let l = new ClassificationLoader(getStudioEndpoint(), apiKey);
+        let l = new ClassificationLoader(getStudioEndpoint(), {
+            auth: 'apiKey',
+            apiKey: apiKey
+        });
 
         let projectId = await l.getProject();
 

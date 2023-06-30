@@ -28,9 +28,9 @@ export class FindSegments {
             // if we have a 1sec window we'll start searching 0.85 sec before the peak
             let searchStart = Math.max(segmentCenter - minSegmentDistance, 0);
             // and end at 1sec after the peak
-            let searchEnd = Math.min(segmentCenter + minSegmentDistance, data.length - 1);
+            let searchEnd = Math.min(segmentCenter + minSegmentDistance, combinedData.length - 1);
 
-            let windows: { start: number; end: number; energy: number }[] = [];
+            let windows: { start: number, end: number, energy: number }[] = [];
 
             let frameLength = Math.floor(0.02 * frequency);
             if (frameLength < 1) frameLength = 1;
@@ -48,13 +48,13 @@ export class FindSegments {
                 });
             }
 
-            let mean = this.avg(windows.map(w => w.energy)) * 2;
+            let mean = this.avg(windows.map(w => w.energy)) * 1.2;
             windows = windows.filter(x => x.energy > mean); // <-- all interesting windows
 
             if (windows.length === 0) return undefined;
 
-            let interestingWindows: { start: number; end: number; energy: number }[] = [];
-            let currInterestingWindow: { start: number; end: number; energy: number } | undefined;
+            let interestingWindows: { start: number, end: number, energy: number }[] = [];
+            let currInterestingWindow: { start: number, end: number, energy: number } | undefined;
 
             for (let w of windows) {
                 if (!currInterestingWindow) {
@@ -87,7 +87,8 @@ export class FindSegments {
                 };
             }
 
-            let center = (mostInterestingWindow.end + mostInterestingWindow.start) / 2;
+            // Center between peak and highest energy frame (so we'll always capture the peak)
+            let center = (((mostInterestingWindow.end + mostInterestingWindow.start) / 2) + segmentCenter) / 2;
             let begin = center - Math.floor(samplesPerWindow / 2);
             let end = center + Math.floor(samplesPerWindow / 2);
 
@@ -129,46 +130,36 @@ export class FindSegments {
             };
         });
 
-        let allSegments: { start: number; end: number }[] = [];
-        let lastSegment: { start: number; end: number } | undefined;
+        let allSegments: { start: number, end: number }[] = [];
+        let lastSegment: { start: number, end: number } | undefined;
         for (let s of segments) {
             if (typeof s === 'undefined') continue;
 
             // max. 15% overlap between windows
             if (lastSegment && s.start - lastSegment.end < -0.15 * samplesPerWindow) {
-                continue;
+                // Compare peak energies in each segment and choose highest
+                // Add the '|| 0' to make the linter happy.  There should always be a peak in the segment
+                let lastSegmentPeak = combinedData[indices.find(x => x >= lastSegment!.start) || 0];
+                let thisSegmentPeak = combinedData[indices.find(x => typeof s !== 'undefined' && x >= s.start) || 0];
+                if (thisSegmentPeak > lastSegmentPeak) {
+                    // remove the last segment added to the list
+                    // this new one will be added below
+                    allSegments.pop();
+                } else {
+                    // don't add this one then
+                    continue;
+                }
             }
 
             lastSegment = s;
             allSegments.push(s);
         }
 
-        allSegments = allSegments.filter(s => {
-            let d = <number[]>data.slice(s.start, s.end);
-            let squares = d.map(v => v * v);
-            let sum = squares.reduce((curr, v) => (curr + v));
-            let mean = sum / data.length;
-            console.log('Found segment', s, mean);
-            if (mean < 100000) {
-                return false;
-            }
-            return true;
-        });
-
-        if (data.length !== samplesPerWindow && allSegments.length === 1 && allSegments[0].start === 0) {
-            return [];
-        }
-
         return allSegments;
-    }
-
-    private avg(signal: number[]): number {
-        return signal.reduce((a, b) => a + b, 0) / signal.length;
     }
 
     /**
      * Port of the scipy findpeaks function
-     *
      * @param data Array of data items
      * @param distance Distance between peaks (number of datapoints)
      * @param rmsThreshold RMS threshold for peaks (percentage of full data RMS)
@@ -184,7 +175,7 @@ export class FindSegments {
         let squares = data.map(v => v * v);
         let sum = squares.reduce((curr, v) => (curr + v));
         let mean = sum / data.length;
-        let threshold = Math.sqrt(mean) * 1.2;
+        let threshold = Math.sqrt(mean) * 2;
 
         let peaks = [];
         for (let ix = 1; ix < data.length - 1; ix++) {
@@ -239,5 +230,9 @@ export class FindSegments {
         }
 
         return indices;
+    }
+
+    private avg(signal: number[]): number {
+        return signal.reduce((a, b) => a + b, 0) / signal.length;
     }
 }

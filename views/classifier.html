@@ -5,7 +5,7 @@
             <div class="col-auto mt-3 mb-3 pr-0">
                 <img src="{{cdnPrefix}}/smartphone/mark.svg">
             </div>
-            <div class="col align-middle">
+            <div class="col align-middle" id="classifier-title-col">
                 <h1 class="text-dark mb-0 border-left pl-4">Classifier</h1>
             </div>
         </div>
@@ -88,9 +88,18 @@
                 </div>
             </div>
         </div>
-        <div class="row mt-4" id="inferencing-in-progress" style="display: none">
+
+        <div id="inferencing-in-progress" class="row mt-4" style="display: none">
             <div class="col">
                 <div class="card shadow">
+                    <div class="card-body pb-0" id="inferencing-public-project-hint" style="display: none;">
+                        <div class="row">
+                            <div class="col text-center text-xs">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Want to show this ML model to someone else? Just share the URL!
+                            </div>
+                        </div>
+                    </div>
                     <div class="card-body text-center mt-5 mb-4" id="inferencing-sampling-body">
                         <div class="col text-center">
                             <div class="sampling-circle"></div>
@@ -111,7 +120,17 @@
                     <div id="inference-recording-message-body" class="card-body text-center pb-0 pt-0">
                         <h2 id="inferencing-recording-data-message">Recording data</h2>
                     </div>
+                    <div class="row mt-2 text-center" id="time-per-inference-container" style="display: none">
+                        <div class="col text-xs">Time per inference: <span id="time-per-inference"></span> ms.</div>
+                    </div>
                     <div class="card-body px-0 pb-0" id="inferencing-result" style="visibility: hidden">
+                        <div class="row mb-4">
+                            <div class="col text-center text-xs" id="performance-calibration-hint" style="display: none;">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Performance calibration is configured for your project.
+                                If no event is detected, all values are 0.
+                            </div>
+                        </div>
                         <table class="table align-items-center table-flush table-hover">
                             <thead class="thead-light">
                                 <tr>

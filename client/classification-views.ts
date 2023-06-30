@@ -1,4 +1,4 @@
-import { getApiKey, getDeviceId, storeApiKey, storeDeviceId, getStudioEndpoint } from "./settings";
+import { getAuth, getDeviceId, storeApiKey, storeDeviceId, getStudioEndpoint } from "./settings";
 import { ISensor, ISamplingOptions } from "./sensors/isensor";
 import { AccelerometerSensor } from "./sensors/accelerometer";
 import { MicrophoneSensor } from "./sensors/microphone";
@@ -7,7 +7,6 @@ import { Positional9DOFSensor } from "./sensors/9axisIMU";
 import { ClassificationLoader } from "./classification-loader";
 import { ClassificationResponse, ClassifierProperties, EdgeImpulseClassifier } from "./classifier";
 import { Notify } from "./notify";
-import { MovingAverageFilter } from "./moving-average-filter";
 import { getErrorMsg } from "./utils";
 
 export class ClassificationClientViews {
@@ -20,6 +19,7 @@ export class ClassificationClientViews {
     };
 
     private _elements = {
+        title: document.querySelector('h1') as HTMLElement,
         deviceId: document.querySelector('#connected-device-id') as HTMLElement,
         connectionFailedMessage: document.querySelector('#connection-failed-message') as HTMLElement,
         loadingText: document.querySelector('#loading-view-text') as HTMLElement,
@@ -29,6 +29,7 @@ export class ClassificationClientViews {
         inferencingMessage: document.querySelector('#inferencing-recording-data-message') as HTMLElement,
         inferencingResult: document.querySelector('#inferencing-result') as HTMLElement,
         inferencingResultTable: document.querySelector('#inferencing-result table') as HTMLElement,
+        perfCalHint: document.querySelector('#performance-calibration-hint') as HTMLElement,
         buildProgress: document.querySelector('#build-progress') as HTMLElement,
         inferenceCaptureBody: document.querySelector('#capture-camera') as HTMLElement,
         inferenceCaptureButton: document.querySelector('#capture-camera-button') as HTMLElement,
@@ -37,6 +38,9 @@ export class ClassificationClientViews {
         cameraInner: document.querySelector('.capture-camera-inner') as HTMLElement,
         cameraVideo: document.querySelector('.capture-camera-inner video') as HTMLVideoElement,
         cameraCanvas: document.querySelector('.capture-camera-inner canvas') as HTMLCanvasElement,
+        timePerInferenceContainer: document.querySelector('#time-per-inference-container') as HTMLElement,
+        timePerInference: document.querySelector('#time-per-inference') as HTMLElement,
+        shareHint: document.querySelector('#inferencing-public-project-hint') as HTMLElement
     };
 
     private _sensors: ISensor[] = [];
@@ -87,16 +91,45 @@ export class ClassificationClientViews {
             this._elements.switchToDataCollection.href = 'accelerometer.html';
         }
 
-        if (getApiKey()) {
+        const auth = getAuth();
+
+        if (auth) {
+            let loader = new ClassificationLoader(getStudioEndpoint(), auth);
+
+            const project = await loader.getProject();
+
+            // set name
+            if (project) {
+                this._elements.title.textContent = this._elements.title.title =
+                    project.owner + ' / ' + project.name;
+            }
+
             // persist keys now...
-            storeApiKey(getApiKey());
-            window.history.replaceState(null, '', window.location.pathname);
+            if (auth.auth === 'apiKey') {
+                storeApiKey(auth.apiKey);
+
+                // don't rewrite state if auth via public project ID
+                window.history.replaceState(null, '', window.location.pathname);
+
+                // no share hint
+                this._elements.shareHint.style.display = 'none';
+            }
+            else {
+                // update the link at the bottom to see the public project URL
+                if (project) {
+                    this._elements.switchToDataCollection.href = project.studioUrl;
+                    this._elements.switchToDataCollection.target = '_blank';
+                    this._elements.switchToDataCollection.textContent = 'View project on Edge Impulse';
+                }
+
+                // switch-to-data-collection
+                this._elements.shareHint.style.display = '';
+            }
 
             this._elements.loadingText.textContent = 'Loading classifier...';
 
             // tslint:disable-next-line: no-floating-promises
             (async () => {
-                let loader = new ClassificationLoader(getStudioEndpoint(), getApiKey());
                 loader.on('status', msg => {
                     console.log('status', msg);
                     this._elements.loadingText.textContent = msg;
@@ -113,6 +146,7 @@ export class ClassificationClientViews {
                 });
                 try {
                     this._classifier = await loader.load();
+
                     let props = this._classifier.getProperties();
 
                     if (props.sensor === 'microphone' && !(await microphone.hasSensor())) {
@@ -213,6 +247,8 @@ export class ClassificationClientViews {
                     this._elements.inferenceCaptureBody.style.display = 'none';
                     this._elements.inferenceRecordingMessageBody.style.display = '';
                 }
+
+                this._elements.timePerInferenceContainer.style.display = 'none';
 
                 let sampleWindowLength = prop.inputFeaturesCount * (1000 / prop.frequency);
                 this._elements.inferencingTimeLeft.textContent = 'Waiting';
@@ -350,13 +386,7 @@ export class ClassificationClientViews {
                 };
 
                 if (prop.sensor === 'camera') {
-                    if (prop.modelType === 'object_detection') {
-                        // MobileNet SSD should not run continuously (will be too slow)
-                        setTimeout(sampleNextWindow, 0);
-                    }
-                    else {
-                        return this.sampleImagesContinuous(<CameraSensor>sensor, prop);
-                    }
+                    return this.sampleImagesContinuous(<CameraSensor>sensor, prop);
                 }
                 else if (prop.sensor === 'microphone' && sensor) {
                     return this.sampleAudioContinuous(sensor, prop);
@@ -394,10 +424,16 @@ export class ClassificationClientViews {
 
         let isClassifying = false;
         let last = Date.now();
-        // should be 250ms. but if not, make it align to window,
-        // e.g. if 800ms. then we use 200ms.
-        let sampleLength = 250 - (sampleWindowLength % 250);
-        let maf: MovingAverageFilter | undefined;
+        let sampleLength: number;
+        if (prop.continuousMode) {
+            // run in continuous mode? then just use the slice size
+            sampleLength = (prop.continuousMode.sliceSize) * (1000 / prop.frequency);
+        }
+        else {
+            // should be 250ms. but if not, make it align to window,
+            // e.g. if 800ms. then we use 200ms.
+            sampleLength = 250 - (sampleWindowLength % 250);
+        }
 
         let lastFiveResults: string[] = [];
 
@@ -412,19 +448,19 @@ export class ClassificationClientViews {
                 last = Date.now();
 
                 console.time('inferencing');
-                let res = this._classifier.classify(data, false);
+                let res;
+                if (prop.continuousMode) {
+                    console.log('classifyContinuous');
+                    res = this._classifier.classifyContinuous(
+                        data.slice(data.length - prop.continuousMode.sliceSize), false, true);
+                    }
+                    else {
+                    console.log('classify');
+                    res = this._classifier.classify(data, false);
+                }
                 console.timeEnd('inferencing');
 
                 console.log('inference results', res);
-
-                // Disabled: few-shot KWS does better on short words with MAF disabled
-
-                // console.log('inference results before MAF', res);
-                // if (!maf) {
-                //     maf = new MovingAverageFilter(4, res.results.map(x => x.label));
-                // }
-                // res = maf.run(res);
-                // console.log('inference results after MAF', res);
 
                 await this.renderInferenceResults(res, prop, {
                     activeTimeout: sampleLength,
@@ -465,7 +501,12 @@ export class ClassificationClientViews {
                         this._elements.inferencingMessage.textContent = highest.label;
                     }
                     else {
-                        this._elements.inferencingMessage.textContent = 'uncertain';
+                        if (prop.continuousMode) {
+                            this._elements.inferencingMessage.textContent = 'No event detected';
+                        }
+                        else {
+                            this._elements.inferencingMessage.textContent = 'uncertain';
+                        }
                     }
                 }
 
@@ -512,6 +553,9 @@ export class ClassificationClientViews {
     private async sampleImagesContinuous(sensor: CameraSensor, prop: ClassifierProperties) {
         if (!this._classifier) return;
 
+        this._elements.timePerInferenceContainer.style.display = '';
+        this._elements.timePerInference.textContent = '-';
+
         while (1) {
             let samplingOptions: ISamplingOptions = {
                 mode: 'raw',
@@ -538,7 +582,12 @@ export class ClassificationClientViews {
             // console.log('raw data', d.length, d);
 
             console.time('inferencing');
+            let start = Date.now();
             let res = this._classifier.classify(d, false);
+            let inferenceTimeMs = Date.now() - start;
+            if (inferenceTimeMs === 0) {
+                inferenceTimeMs = 1;
+            }
             console.timeEnd('inferencing');
 
             console.log('inference results', res);
@@ -546,6 +595,8 @@ export class ClassificationClientViews {
             await this.renderInferenceResults(res, prop, {
                 showNoObjectsFoundNotification: false,
             });
+
+            this._elements.timePerInference.textContent = inferenceTimeMs.toString();
 
             console.log('prop.modelType', prop.modelType);
 
@@ -571,6 +622,15 @@ export class ClassificationClientViews {
             showNoObjectsFoundNotification: boolean;
         }) {
         const activeTimeout = opts.activeTimeout || 1000;
+
+        if (this._firstInference) {
+            if (prop.isPerformanceCalibrationEnabled) {
+                this._elements.perfCalHint.style.display = '';
+            }
+            else {
+                this._elements.perfCalHint.style.display = 'none';
+            }
+        }
 
         if (this._firstInference && res.results.length > 0) {
             this._firstInference = false;

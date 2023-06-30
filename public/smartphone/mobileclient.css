@@ -5829,3 +5829,13 @@ body.swal2-no-backdrop .swal2-shown.swal2-bottom-right {
     }
 }
 /* end sweetalert */
+
+#classifier-title-col {
+    overflow: hidden;
+}
+
+#classifier-title-col h1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

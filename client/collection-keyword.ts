@@ -1,4 +1,4 @@
-import { getApiKey, getDeviceId, getFrequency, getKeyword, getSampleLength, getStudioEndpoint,
+import { getAuth, getDeviceId, getFrequency, getKeyword, getSampleLength, getStudioEndpoint,
     storeApiKey, storeDeviceId, storeFrequency, storeKeyword, storeSampleLength } from "./settings";
 import { ISensor } from "./sensors/isensor";
 import { AccelerometerSensor } from "./sensors/accelerometer";
@@ -6,7 +6,7 @@ import { Positional9DOFSensor } from "./sensors/9axisIMU";
 import { MicrophoneSensor } from "./sensors/microphone";
 import { CameraSensor } from "./sensors/camera";
 import { ClassificationLoader } from "./classification-loader";
-import { FindSegments } from "./find-segments";
+import { FindSegments } from "./mobile-studio-shared/find-segments";
 import { Uploader } from "./uploader";
 import { dataMessage } from "./messages";
 import { Sample } from "./models";
@@ -87,15 +87,18 @@ export class DataCollectionKeywordClientViews {
             this._sensors.push(camera);
         }
 
-        if (getApiKey()) {
+        const auth = getAuth();
+
+        // requires api key for data collection
+        if (auth?.auth === 'apiKey') {
             this.switchView(this._views.loading);
             this._elements.loadingText.textContent = 'Connecting to Edge Impulse...';
 
-            let project = await this.getProject(getApiKey());
+            let project = await this.getProject(auth.apiKey);
             this._elements.projectName.textContent = project.name;
             this.switchView(this._views.connected);
 
-            storeApiKey(getApiKey());
+            storeApiKey(auth.apiKey);
 
             window.history.replaceState(null, '', window.location.pathname);
 
@@ -150,7 +153,7 @@ export class DataCollectionKeywordClientViews {
 
                     this._elements.loadingText.textContent = 'Uploading ' + segments.length + ' keywords... (0%)';
 
-                    let uploader = new Uploader(getApiKey());
+                    let uploader = new Uploader(auth.apiKey);
 
                     console.log('segments', segments);
 
@@ -164,7 +167,7 @@ export class DataCollectionKeywordClientViews {
                         };
 
                         let data = dataMessage({
-                            apiKey: getApiKey(),
+                            apiKey: auth.apiKey,
                             device: {
                                 deviceId: getDeviceId(),
                                 sensors: [ camera ].map(x => {
@@ -287,7 +290,10 @@ export class DataCollectionKeywordClientViews {
     }
 
     private async getProject(apiKey: string) {
-        let l = new ClassificationLoader(getStudioEndpoint(), apiKey);
+        let l = new ClassificationLoader(getStudioEndpoint(), {
+            auth: 'apiKey',
+            apiKey: apiKey
+        });
 
         let project = await l.getProject();
 

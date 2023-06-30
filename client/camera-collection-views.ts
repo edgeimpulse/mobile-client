@@ -1,4 +1,4 @@
-import { getApiKey, getDeviceId, storeApiKey, storeDeviceId, getStudioEndpoint } from "./settings";
+import { getAuth, getDeviceId, storeApiKey, storeDeviceId, getStudioEndpoint, ApiAuth } from "./settings";
 import { ISensor } from "./sensors/isensor";
 import { CameraSensor } from "./sensors/camera";
 import { Uploader } from "./uploader";
@@ -35,6 +35,7 @@ export class CameraDataCollectionClientViews {
     private _numCaptures: number = 0;
     private _uploader: Uploader | undefined;
     private _hmacKey: string = '0';
+    private _auth: ApiAuth | undefined;
 
     async init() {
         storeDeviceId(getDeviceId());
@@ -51,13 +52,17 @@ export class CameraDataCollectionClientViews {
         this._elements.categoryText.parentNode?.insertBefore(this._elements.categorySelect,
             this._elements.categoryText);
 
-        if (getApiKey()) {
-            storeApiKey(getApiKey());
+        const auth = this._auth = getAuth();
+
+        // data collection can only be done with apiKey
+        if (auth && auth.auth === 'apiKey') {
+            storeApiKey(auth.apiKey);
+            window.history.replaceState(null, '', window.location.pathname);
 
             try {
                 this.switchView(this._views.loading);
 
-                let devKeys = await this.getDevelopmentApiKeys(getApiKey());
+                let devKeys = await this.getDevelopmentApiKeys(auth.apiKey);
                 if (devKeys.hmacKey) {
                     this._hmacKey = devKeys.hmacKey;
                 }
@@ -66,7 +71,7 @@ export class CameraDataCollectionClientViews {
                 this._elements.categoryText.textContent = localStorage.getItem('last-camera-category') || 'split';
                 this._elements.categorySelect.value = this._elements.categoryText.textContent;
 
-                this._uploader = new Uploader(getApiKey());
+                this._uploader = new Uploader(auth.apiKey);
 
                 this._elements.grantPermission.textContent = 'Give access to the camera';
 
@@ -114,6 +119,10 @@ export class CameraDataCollectionClientViews {
                     throw new Error('Attachment is supposed to present');
                 }
 
+                if (!this._auth || this._auth.auth !== 'apiKey') {
+                    throw new Error('Not authenticated');
+                }
+
                 let category = this._elements.categoryText.textContent || 'training';
                 if (this._elements.categoryText.textContent === 'split') {
                     if (this._numCaptures > 0) {
@@ -136,7 +145,7 @@ export class CameraDataCollectionClientViews {
                 };
 
                 let data = dataMessage({
-                    apiKey: getApiKey(),
+                    apiKey: this._auth.apiKey,
                     device: {
                         deviceId: getDeviceId(),
                         sensors: [ camera ].map(s => {
@@ -267,7 +276,10 @@ export class CameraDataCollectionClientViews {
     }
 
     private async getDevelopmentApiKeys(apiKey: string) {
-        let l = new ClassificationLoader(getStudioEndpoint(), apiKey);
+        let l = new ClassificationLoader(getStudioEndpoint(), {
+            auth: 'apiKey',
+            apiKey: apiKey
+        });
 
         let projectId = await l.getProject();
 

@@ -22,27 +22,36 @@ export interface ClassifierProperties {
     labelCount: number;
     modelType: 'classification' | 'object_detection' | 'constrained_object_detection';
     hasAnomaly: boolean;
+    continuousMode: {
+        sliceSize: number;
+    } | undefined;
+    isPerformanceCalibrationEnabled: boolean;
 }
+
+export type WasmRunClassifierResponse = {
+    result: number;
+    anomaly: number;
+    size(): number;
+    get(index: number): {
+        label: string;
+        value: number;
+        width?: number;
+        height?: number;
+        x?: number;
+        y?: number;
+        delete: () => void;
+    };
+};
 
 export interface WasmRuntimeModule {
     HEAPU8: {
         buffer: Uint8Array;
     };
     onRuntimeInitialized: () => void;
-    run_classifier(dataPointer: number, dataLength: number, debug: boolean): {
-        result: number;
-        anomaly: number;
-        size(): number;
-        get(index: number): {
-            label: string;
-            value: number;
-            width?: number;
-            height?: number;
-            x?: number;
-            y?: number;
-            delete: () => void;
-        };
-    };
+    init: () => void;
+    run_classifier(dataPointer: number, dataLength: number, debug: boolean): WasmRunClassifierResponse;
+    run_classifier_continuous(
+        dataPointer: number, dataLength: number, debug: boolean, enablePerfCal: boolean): WasmRunClassifierResponse;
     get_properties(): {
         frequency: number;
         has_anomaly: boolean;
@@ -56,6 +65,9 @@ export interface WasmRuntimeModule {
         label_count: number;
         sensor: EiSerialSensor;
         model_type: 'classification' | 'object_detection' | 'constrained_object_detection';
+        slice_size: number;
+        use_continuous_mode: boolean | undefined;
+        is_performance_calibration_enabled: boolean | undefined;
     };
     get_project(): {
         id: number;
@@ -79,6 +91,7 @@ export class EdgeImpulseClassifier {
     constructor(module: WasmRuntimeModule) {
         this._module = module;
         this._module.onRuntimeInitialized = () => {
+            this._module.init();
             this._initialized = true;
         };
     }
@@ -88,8 +101,9 @@ export class EdgeImpulseClassifier {
 
         return new Promise<void>((resolve) => {
             this._module.onRuntimeInitialized = () => {
-                resolve();
+                this._module.init();
                 this._initialized = true;
+                resolve();
             };
         });
     }
@@ -127,6 +141,10 @@ export class EdgeImpulseClassifier {
             labelCount: ret.label_count,
             modelType: ret.model_type,
             hasAnomaly: ret.has_anomaly,
+            continuousMode: ret.use_continuous_mode && ret.slice_size ? {
+                sliceSize: ret.slice_size
+            } : undefined,
+            isPerformanceCalibrationEnabled: ret.is_performance_calibration_enabled || false,
         };
     }
 
@@ -140,6 +158,33 @@ export class EdgeImpulseClassifier {
         const obj = this._arrayToHeap(rawData);
 
         const ret = this._module.run_classifier(obj.buffer.byteOffset, rawData.length, debug);
+
+        this._module._free(obj.ptr);
+
+        if (ret.result !== 0) {
+            throw new Error('Classification failed (err code: ' + ret.result + ')');
+        }
+
+        const jsResult: ClassificationResponse = {
+            anomaly: ret.anomaly,
+            results: []
+        };
+
+        for (let cx = 0; cx < ret.size(); cx++) {
+            let c = ret.get(cx);
+            jsResult.results.push({ label: c.label, value: c.value, x: c.x, y: c.y, width: c.width, height: c.height });
+            c.delete();
+        }
+
+        return jsResult;
+    }
+
+    classifyContinuous(rawData: number[], debug = false, enablePerfCal = true): ClassificationResponse {
+        if (!this._initialized) throw new Error('Module is not initialized');
+
+        const obj = this._arrayToHeap(rawData);
+
+        const ret = this._module.run_classifier_continuous(obj.buffer.byteOffset, rawData.length, debug, enablePerfCal);
 
         this._module._free(obj.ptr);
 

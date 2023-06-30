@@ -165,9 +165,6 @@ studioApp.get('/microphone.html', (_req, res) => {
 });
 
 
-// in development we'll use two servers on two different ports
-const studioServer = new http.Server(studioApp);
-
 if (process.env.STATIC_ASSETS_PREFIX) {
     const pathPrefix = (STATIC_ASSETS_PREFIX ? '/' + STATIC_ASSETS_PREFIX.replace(/^\/+|\/+$/g, '') : '');
     studioApp.use(express.static(Path.join(process.cwd(), 'public'), undefined));
@@ -201,6 +198,7 @@ studioApp.use((err: Error, req: express.Request, res: express.Response, next: ex
     res.status(500).header('Content-Type', 'text/plain').send(msg);
 });
 
+const studioServer = new http.Server(studioApp);
 studioServer.listen(Number(process.env.PORT) || 4820, process.env.HOST || '0.0.0.0', async () => {
     const port = process.env.PORT || 4820;
     log.info(`Web server listening on port ${port}!`);
