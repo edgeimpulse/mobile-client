@@ -604,12 +604,18 @@ export class ClassificationClientViews {
                 this._elements.inferenceRecordingMessageBody.style.display = '';
                 this._elements.inferenceRecordingMessageBody.classList.remove('pt-0');
                 this._elements.inferenceRecordingMessageBody.classList.add('pt-4');
-                let highest = res.results.find(x => x.value >= 0.8);
-                if (highest) {
-                    this._elements.inferencingMessage.textContent = highest.label;
+
+                if (prop.hasVisualAnomalyDetection && res.visual_ad_grid_cells.length > 0) {
+                    this._elements.inferencingMessage.textContent = 'anomaly';
                 }
                 else {
-                    this._elements.inferencingMessage.textContent = 'uncertain';
+                    let highest = res.results.find(x => x.value >= 0.8);
+                    if (highest) {
+                        this._elements.inferencingMessage.textContent = highest.label;
+                    }
+                    else {
+                        this._elements.inferencingMessage.textContent = 'uncertain';
+                    }
                 }
             }
         }
@@ -655,12 +661,31 @@ export class ClassificationClientViews {
                     th.classList.add('px-0', 'text-center');
                     thead.appendChild(th);
                 }
+                if (res.has_visual_anomaly_detection) {
+                    let th = document.createElement('th');
+                    th.scope = 'col';
+                    th.textContent = 'anomaly';
+                    th.classList.add('px-0', 'text-center');
+                    thead.appendChild(th);
+                }
 
                 if (thead.lastChild) {
                     (<HTMLElement>thead.lastChild).classList.add('pr-4');
                 }
             }
         }
+
+        for (let bx of Array.from(
+            this._elements.cameraInner.querySelectorAll('.bounding-box-container'))) {
+
+            bx.parentNode?.removeChild(bx);
+        }
+
+        let heightFactor = Number(this._elements.cameraCanvas.height) /
+            Number(this._elements.cameraVideo.clientHeight);
+
+        let widthFactor = Number(this._elements.cameraCanvas.width) /
+            Number(this._elements.cameraVideo.clientWidth);
 
         if (!this._isObjectDetection && res.results.length > 0) {
             let tbody = <HTMLElement>this._elements.inferencingResultTable.querySelector('tbody');
@@ -676,7 +701,7 @@ export class ClassificationClientViews {
                 let td = document.createElement('td');
                 td.textContent = e.value.toFixed(2);
                 td.classList.add('px-0', 'text-center');
-                if (Math.max(...res.results.map(v => v.value)) === e.value) {
+                if (Math.max(...res.results.map(v => v.value)) === e.value && res.visual_ad_grid_cells.length === 0) {
                     td.classList.add('font-weight-bold');
                 }
                 else {
@@ -693,6 +718,19 @@ export class ClassificationClientViews {
                 row.appendChild(td);
             }
 
+            if (res.has_visual_anomaly_detection) {
+                let td = document.createElement('td');
+                td.textContent = (res.visual_ad_max || 0).toFixed(2);
+                td.classList.add('px-0', 'text-center');
+                if (res.visual_ad_grid_cells.length > 0) {
+                    td.classList.add('font-weight-bold');
+                }
+                else {
+                    td.classList.add('text-gray');
+                }
+                row.appendChild(td);
+            }
+
             if (row.lastChild) {
                 (<HTMLElement>row.lastChild).classList.add('pr-4');
             }
@@ -705,22 +743,11 @@ export class ClassificationClientViews {
             }
         }
         else {
-            for (let bx of Array.from(
-                this._elements.cameraInner.querySelectorAll('.bounding-box-container'))) {
-
-                bx.parentNode?.removeChild(bx);
-            }
-
-            if (res.results.length === 0 && opts.showNoObjectsFoundNotification) {
+            if (res.results.length === 0 && res.visual_ad_grid_cells.length === 0 &&
+                opts.showNoObjectsFoundNotification) {
                 Notify.notify('', 'No objects found', 'top', 'center',
                     'fas fa-exclamation-triangle', 'success');
             }
-
-            let heightFactor = Number(this._elements.cameraCanvas.height) /
-                Number(this._elements.cameraVideo.clientHeight);
-
-            let widthFactor = Number(this._elements.cameraCanvas.width) /
-                Number(this._elements.cameraVideo.clientWidth);
 
             for (let b of res.results) {
                 if (typeof b.x !== 'number' ||
@@ -767,6 +794,8 @@ export class ClassificationClientViews {
                     el.style.top = (centerY - 10) + 'px';
                 }
 
+                // Render label and/or scores. For object detection and FOMO,
+                // we add a label with class and score.
                 let label = document.createElement('div');
                 label.classList.add('bounding-box-label');
                 label.style.background = color;
@@ -778,6 +807,50 @@ export class ClassificationClientViews {
 
                 this._elements.cameraInner.appendChild(el);
             }
+        }
+
+
+        for (let b of res.visual_ad_grid_cells) {
+            if (typeof b.x !== 'number' ||
+                typeof b.y !== 'number' ||
+                typeof b.width !== 'number' ||
+                typeof b.height !== 'number') {
+                continue;
+            }
+            let bb = {
+                x: b.x / widthFactor,
+                y: b.y / heightFactor,
+                width: b.width / widthFactor,
+                height: b.height / heightFactor,
+                label: b.label,
+                value: b.value
+            };
+
+            let el = document.createElement('div');
+            el.classList.add('bounding-box-container');
+            el.style.position = 'absolute';
+            // Fill container for visual AD, else use a border
+            el.style.background = 'rgba(255, 0, 0, 0.5)';
+
+            el.style.width = (bb.width) + 'px';
+            el.style.height = (bb.height) + 'px';
+            el.style.left = (bb.x) + 'px';
+            el.style.top = (bb.y) + 'px';
+
+            // Render label and/or scores. For visual AD, the score is printed
+            // in the middle of the bounding box.
+            let score = document.createElement('div');
+            score.style.fontSize = `${Math.min(20, bb.width * 0.4)}px`;
+            score.style.color = 'white';
+            score.textContent = bb.value > 1 ? bb.value.toFixed(1) : bb.value.toFixed(2);
+            el.appendChild(score);
+
+            // Center align the score
+            el.style.display = 'flex';
+            el.style.alignItems = 'center';
+            el.style.justifyContent = 'center';
+
+            this._elements.cameraInner.appendChild(el);
         }
     }
 }

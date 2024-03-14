@@ -22,6 +22,7 @@ export interface ClassifierProperties {
     labelCount: number;
     modelType: 'classification' | 'object_detection' | 'constrained_object_detection';
     hasAnomaly: boolean;
+    hasVisualAnomalyDetection: boolean;
     continuousMode: {
         sliceSize: number;
     } | undefined;
@@ -31,8 +32,21 @@ export interface ClassifierProperties {
 export type WasmRunClassifierResponse = {
     result: number;
     anomaly: number;
+    delete(): void;
     size(): number;
     get(index: number): {
+        label: string;
+        value: number;
+        width?: number;
+        height?: number;
+        x?: number;
+        y?: number;
+        delete: () => void;
+    };
+    visual_ad_max: number | undefined;
+    visual_ad_mean: number | undefined;
+    visual_ad_grid_cells_size(): number;
+    visual_ad_grid_cells_get(index: number): {
         label: string;
         value: number;
         width?: number;
@@ -55,6 +69,7 @@ export interface WasmRuntimeModule {
     get_properties(): {
         frequency: number;
         has_anomaly: boolean;
+        has_visual_anomaly_detection: boolean;
         input_features_count: number;
         image_input_width: number;
         image_input_height: number;
@@ -82,16 +97,22 @@ export interface WasmRuntimeModule {
 export type ClassificationResponse = {
     anomaly: number;
     results: { label: string; value: number; width?: number; height?: number; x?: number; y?: number }[];
+    visual_ad_grid_cells: { label: string; value: number; width?: number; height?: number; x?: number; y?: number }[];
+    has_visual_anomaly_detection: boolean;
+    visual_ad_max?: number,
+    visual_ad_mean?: number,
 };
 
 export class EdgeImpulseClassifier {
     private _initialized = false;
     private _module: WasmRuntimeModule;
+    private _props: ClassifierProperties | undefined;
 
     constructor(module: WasmRuntimeModule) {
         this._module = module;
         this._module.onRuntimeInitialized = () => {
             this._module.init();
+            this._props = this.getProperties();
             this._initialized = true;
         };
     }
@@ -102,6 +123,7 @@ export class EdgeImpulseClassifier {
         return new Promise<void>((resolve) => {
             this._module.onRuntimeInitialized = () => {
                 this._module.init();
+                this._props = this.getProperties();
                 this._initialized = true;
                 resolve();
             };
@@ -141,6 +163,7 @@ export class EdgeImpulseClassifier {
             labelCount: ret.label_count,
             modelType: ret.model_type,
             hasAnomaly: ret.has_anomaly,
+            hasVisualAnomalyDetection: ret.has_visual_anomaly_detection,
             continuousMode: ret.use_continuous_mode && ret.slice_size ? {
                 sliceSize: ret.slice_size
             } : undefined,
@@ -153,7 +176,7 @@ export class EdgeImpulseClassifier {
     }
 
     classify(rawData: number[], debug = false): ClassificationResponse {
-        if (!this._initialized) throw new Error('Module is not initialized');
+        if (!this._initialized || !this._props) throw new Error('Module is not initialized');
 
         const obj = this._arrayToHeap(rawData);
 
@@ -165,9 +188,11 @@ export class EdgeImpulseClassifier {
             throw new Error('Classification failed (err code: ' + ret.result + ')');
         }
 
-        const jsResult: ClassificationResponse = {
+        let jsResult: ClassificationResponse = {
             anomaly: ret.anomaly,
-            results: []
+            results: [],
+            visual_ad_grid_cells: [],
+            has_visual_anomaly_detection: this._props.hasVisualAnomalyDetection,
         };
 
         for (let cx = 0; cx < ret.size(); cx++) {
@@ -176,11 +201,25 @@ export class EdgeImpulseClassifier {
             c.delete();
         }
 
+        if (this._props.hasVisualAnomalyDetection) {
+            jsResult.visual_ad_max = ret.visual_ad_max;
+            jsResult.visual_ad_mean = ret.visual_ad_mean;
+            jsResult.visual_ad_grid_cells = [];
+            for (let cx = 0; cx < ret.visual_ad_grid_cells_size(); cx++) {
+                let c = ret.visual_ad_grid_cells_get(cx);
+                jsResult.visual_ad_grid_cells.push({
+                    label: c.label, value: c.value, x: c.x, y: c.y, width: c.width, height: c.height });
+                c.delete();
+            }
+        }
+
+        ret.delete();
+
         return jsResult;
     }
 
     classifyContinuous(rawData: number[], debug = false, enablePerfCal = true): ClassificationResponse {
-        if (!this._initialized) throw new Error('Module is not initialized');
+        if (!this._initialized || !this._props) throw new Error('Module is not initialized');
 
         const obj = this._arrayToHeap(rawData);
 
@@ -194,7 +233,9 @@ export class EdgeImpulseClassifier {
 
         const jsResult: ClassificationResponse = {
             anomaly: ret.anomaly,
-            results: []
+            results: [],
+            visual_ad_grid_cells: [],
+            has_visual_anomaly_detection: this._props.hasVisualAnomalyDetection,
         };
 
         for (let cx = 0; cx < ret.size(); cx++) {
@@ -202,6 +243,20 @@ export class EdgeImpulseClassifier {
             jsResult.results.push({ label: c.label, value: c.value, x: c.x, y: c.y, width: c.width, height: c.height });
             c.delete();
         }
+
+        if (this._props.hasVisualAnomalyDetection) {
+            jsResult.visual_ad_max = ret.visual_ad_max;
+            jsResult.visual_ad_mean = ret.visual_ad_mean;
+            jsResult.visual_ad_grid_cells = [];
+            for (let cx = 0; cx < ret.visual_ad_grid_cells_size(); cx++) {
+                let c = ret.visual_ad_grid_cells_get(cx);
+                jsResult.visual_ad_grid_cells.push({
+                    label: c.label, value: c.value, x: c.x, y: c.y, width: c.width, height: c.height });
+                c.delete();
+            }
+        }
+
+        ret.delete();
 
         return jsResult;
     }
