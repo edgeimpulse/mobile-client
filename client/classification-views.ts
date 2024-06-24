@@ -1,4 +1,4 @@
-import { getAuth, getDeviceId, storeApiKey, storeDeviceId, getStudioEndpoint } from "./settings";
+import { getAuth, getDeviceId, storeApiKeyAndImpulseId, storeDeviceId, getStudioEndpoint } from "./settings";
 import { ISensor, ISamplingOptions } from "./sensors/isensor";
 import { AccelerometerSensor } from "./sensors/accelerometer";
 import { MicrophoneSensor } from "./sensors/microphone";
@@ -106,7 +106,7 @@ export class ClassificationClientViews {
 
             // persist keys now...
             if (auth.auth === 'apiKey') {
-                storeApiKey(auth.apiKey);
+                storeApiKeyAndImpulseId(auth.apiKey, auth.impulseId);
 
                 // don't rewrite state if auth via public project ID
                 window.history.replaceState(null, '', window.location.pathname);
@@ -128,7 +128,7 @@ export class ClassificationClientViews {
 
             this._elements.loadingText.textContent = 'Loading classifier...';
 
-            // tslint:disable-next-line: no-floating-promises
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
             (async () => {
                 loader.on('status', msg => {
                     console.log('status', msg);
@@ -400,6 +400,7 @@ export class ClassificationClientViews {
             }
         }).catch(err => {
             console.error(err);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             this._elements.connectionFailedMessage.textContent = err;
             this.switchView(this._views.connectionFailed);
         });
@@ -494,9 +495,9 @@ export class ClassificationClientViews {
                         this._elements.inferencingMessage.textContent = '...';
                     }
                 }
-                // otherwise just print highest >= 0.8
+                // otherwise just print highest >= classificationThreshold
                 else {
-                    let highest = res.results.find(x => x.value >= 0.8);
+                    let highest = res.results.find(x => x.value >= prop.classificationThreshold);
                     if (highest) {
                         this._elements.inferencingMessage.textContent = highest.label;
                     }
@@ -519,7 +520,7 @@ export class ClassificationClientViews {
             }
         };
 
-        // tslint:disable-next-line: no-floating-promises
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
         (async () => {
             try {
                 let allData: number[] = [];
@@ -536,7 +537,7 @@ export class ClassificationClientViews {
                     if (allData.length >= prop.inputFeaturesCount) {
                         // we do this in a setTimeout so we go read immediately again
                         setTimeout(() => {
-                            // tslint:disable-next-line: no-floating-promises
+                            // eslint-disable-next-line @typescript-eslint/no-floating-promises
                             classify(allData.slice(allData.length - prop.inputFeaturesCount));
                         }, 0);
                     }
@@ -609,7 +610,7 @@ export class ClassificationClientViews {
                     this._elements.inferencingMessage.textContent = 'anomaly';
                 }
                 else {
-                    let highest = res.results.find(x => x.value >= 0.8);
+                    let highest = res.results.find(x => x.value >= prop.classificationThreshold);
                     if (highest) {
                         this._elements.inferencingMessage.textContent = highest.label;
                     }

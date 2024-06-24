@@ -1,0 +1,7 @@
+{
+    "extends": "../../.eslintrc.json",
+    "parser": "@typescript-eslint/parser",
+    "rules": {
+        "no-console": "error"
+    }
+}

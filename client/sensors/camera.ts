@@ -141,11 +141,11 @@ export class CameraSensor implements ISensor {
                 let imageData = context.getImageData(0, 0, imageWidth, imageHeight);
                 let values = [];
                 for (let ix = 0; ix < imageWidth * imageHeight; ix++) {
-                    // tslint:disable-next-line: no-bitwise
+                    // eslint-disable-next-line no-bitwise
                     values.push(Number((imageData.data[ix * 4] << 16)
-                        // tslint:disable-next-line: no-bitwise
+                        // eslint-disable-next-line no-bitwise
                         | (imageData.data[ix * 4 + 1] << 8)
-                        // tslint:disable-next-line: no-bitwise
+                        // eslint-disable-next-line no-bitwise
                         | (imageData.data[ix * 4 + 2])));
                 }
 

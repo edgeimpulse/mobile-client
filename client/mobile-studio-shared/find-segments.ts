@@ -145,7 +145,8 @@ export class FindSegments {
                     // remove the last segment added to the list
                     // this new one will be added below
                     allSegments.pop();
-                } else {
+                }
+                else {
                     // don't add this one then
                     continue;
                 }
@@ -195,6 +196,7 @@ export class FindSegments {
             value: v
         })).sort((a, b) => b.value - a.value).reverse();
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         let priorityToPosition: number[] = new Array(peaks.length).fill(0);
 
         for (let sx = 0; sx < sorted.length; sx++) {

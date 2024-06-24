@@ -5,12 +5,9 @@ import {
 import { parseMessage, createSignature, getErrorMsg } from "./utils";
 import { EdgeImpulseSettings, SampleDetails, Sample } from "./models";
 import { getRemoteManagementEndpoint, getIngestionApi } from "./settings";
-import { AxiosStatic } from '../node_modules/axios';
 import { Emitter } from "./typed-event-emitter";
 import { ISensor } from "./sensors/isensor";
 import { Uploader } from "./uploader";
-
-declare let axios: AxiosStatic;
 
 interface RemoteManagementConnectionState {
     socketConnected: boolean;
@@ -59,6 +56,8 @@ export class RemoteManagementConnection extends Emitter<{
         };
 
         this._socket.onmessage = async event => {
+            /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
+            /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
             const data = await parseMessage(event);
             if (!data) {
                 return;
@@ -126,34 +125,36 @@ export class RemoteManagementConnection extends Emitter<{
                             sampleDetails,
                             dataMessage(this._settings, sampleData),
                             sampleData
-                        );
+                            );
 
-                        this.sendMessage(sampleFinished);
-                        this.emit('samplingFinished');
+                            this.sendMessage(sampleFinished);
+                            this.emit('samplingFinished');
+                        }
+                        catch (ex) {
+                            alert(getErrorMsg(ex));
+                        }
+                        finally {
+                            this._state.sample = msg;
+                            this._state.isSampling = false;
+                        }
                     }
                     catch (ex) {
-                        alert(getErrorMsg(ex));
+                        this.emit('samplingFinished');
+                        this.emit('samplingError', getErrorMsg(ex));
+                        this.sendMessage(
+                            sampleRequestFailed(getErrorMsg(ex))
+                            );
+                        }
                     }
-                    finally {
-                        this._state.sample = msg;
-                        this._state.isSampling = false;
-                    }
-                }
-                catch (ex) {
-                    this.emit('samplingFinished');
-                    this.emit('samplingError', getErrorMsg(ex));
-                    this.sendMessage(
-                        sampleRequestFailed(getErrorMsg(ex))
-                    );
-                }
-            }
-        };
+                    /* eslint-enable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
+                    /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
+                };
 
-        this._socket.onclose = event => {
-            clearInterval(this._socketHeartbeat);
-            const msg = event.wasClean ?
-                // e.g. server process killed or network down
-                `[close] Connection closed cleanly, code=${event.code} reason=${event.reason}` :
+                this._socket.onclose = event => {
+                    clearInterval(this._socketHeartbeat);
+                    const msg = event.wasClean ?
+                    // e.g. server process killed or network down
+                    `[close] Connection closed cleanly, code=${event.code} reason=${event.reason}` :
                 // event.code is usually 1006 in this case
                 "[close] Connection died";
             this._state.socketConnected = false;
@@ -173,7 +174,7 @@ export class RemoteManagementConnection extends Emitter<{
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     sendMessage = (data: any) => {
         this._socket.send(JSON.stringify(data));
-    }
+    };
 
     readAsBinaryStringAsync(file: Blob) {
         return new Promise((resolve, reject) => {

@@ -27,6 +27,7 @@ export interface ClassifierProperties {
         sliceSize: number;
     } | undefined;
     isPerformanceCalibrationEnabled: boolean;
+    classificationThreshold: number;
 }
 
 export type WasmRunClassifierResponse = {
@@ -83,6 +84,7 @@ export interface WasmRuntimeModule {
         slice_size: number;
         use_continuous_mode: boolean | undefined;
         is_performance_calibration_enabled: boolean | undefined;
+        classification_threshold: number;
     };
     get_project(): {
         id: number;
@@ -168,6 +170,9 @@ export class EdgeImpulseClassifier {
                 sliceSize: ret.slice_size
             } : undefined,
             isPerformanceCalibrationEnabled: ret.is_performance_calibration_enabled || false,
+            classificationThreshold: typeof ret.classification_threshold === 'number'
+                ? ret.classification_threshold
+                : 0.8
         };
     }
 

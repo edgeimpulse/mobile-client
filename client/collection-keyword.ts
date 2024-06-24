@@ -1,5 +1,5 @@
-import { getAuth, getDeviceId, getFrequency, getKeyword, getSampleLength, getStudioEndpoint,
-    storeApiKey, storeDeviceId, storeFrequency, storeKeyword, storeSampleLength } from "./settings";
+import { ApiAuth, getAuth, getDeviceId, getFrequency, getKeyword, getSampleLength, getStudioEndpoint,
+    storeApiKeyAndImpulseId, storeDeviceId, storeFrequency, storeKeyword, storeSampleLength } from "./settings";
 import { ISensor } from "./sensors/isensor";
 import { AccelerometerSensor } from "./sensors/accelerometer";
 import { Positional9DOFSensor } from "./sensors/9axisIMU";
@@ -94,11 +94,11 @@ export class DataCollectionKeywordClientViews {
             this.switchView(this._views.loading);
             this._elements.loadingText.textContent = 'Connecting to Edge Impulse...';
 
-            let project = await this.getProject(auth.apiKey);
+            let project = await this.getProject(auth);
             this._elements.projectName.textContent = project.name;
             this.switchView(this._views.connected);
 
-            storeApiKey(auth.apiKey);
+            storeApiKeyAndImpulseId(auth.apiKey, auth.impulseId);
 
             window.history.replaceState(null, '', window.location.pathname);
 
@@ -289,11 +289,8 @@ export class DataCollectionKeywordClientViews {
         return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
-    private async getProject(apiKey: string) {
-        let l = new ClassificationLoader(getStudioEndpoint(), {
-            auth: 'apiKey',
-            apiKey: apiKey
-        });
+    private async getProject(auth: ApiAuth) {
+        let l = new ClassificationLoader(getStudioEndpoint(), auth);
 
         let project = await l.getProject();
 

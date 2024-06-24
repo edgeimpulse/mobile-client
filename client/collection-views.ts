@@ -1,4 +1,4 @@
-import { getAuth, getDeviceId, storeApiKey, storeDeviceId } from "./settings";
+import { getAuth, getDeviceId, storeApiKeyAndImpulseId, storeDeviceId } from "./settings";
 import { RemoteManagementConnection } from "./remote-mgmt";
 import { ISensor } from "./sensors/isensor";
 import { AccelerometerSensor } from "./sensors/accelerometer";
@@ -81,7 +81,7 @@ export class DataCollectionClientViews {
 
             connection.on('connected', () => {
                 // persist keys now...
-                storeApiKey(auth.apiKey);
+                storeApiKeyAndImpulseId(auth.apiKey, auth.impulseId);
                 window.history.replaceState(null, '', window.location.pathname);
 
                 this._elements.deviceId.textContent = getDeviceId();

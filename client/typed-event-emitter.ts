@@ -83,7 +83,6 @@ export class Emitter<T> {
 /**
  * Helper to listen to an event once only.
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function once<T, K extends keyof T>(
     events: Emitter<T>,
     type: K,

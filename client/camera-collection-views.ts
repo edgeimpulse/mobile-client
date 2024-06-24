@@ -1,4 +1,4 @@
-import { getAuth, getDeviceId, storeApiKey, storeDeviceId, getStudioEndpoint, ApiAuth } from "./settings";
+import { getAuth, getDeviceId, storeApiKeyAndImpulseId, storeDeviceId, getStudioEndpoint, ApiAuth } from "./settings";
 import { ISensor } from "./sensors/isensor";
 import { CameraSensor } from "./sensors/camera";
 import { Uploader } from "./uploader";
@@ -56,13 +56,14 @@ export class CameraDataCollectionClientViews {
 
         // data collection can only be done with apiKey
         if (auth && auth.auth === 'apiKey') {
-            storeApiKey(auth.apiKey);
+            storeApiKeyAndImpulseId(auth.apiKey, auth.impulseId);
+
             window.history.replaceState(null, '', window.location.pathname);
 
             try {
                 this.switchView(this._views.loading);
 
-                let devKeys = await this.getDevelopmentApiKeys(auth.apiKey);
+                let devKeys = await this.getDevelopmentApiKeys(auth);
                 if (devKeys.hmacKey) {
                     this._hmacKey = devKeys.hmacKey;
                 }
@@ -163,17 +164,18 @@ export class CameraDataCollectionClientViews {
                 console.log('details', details, 'data', data, 'sample', sample);
 
                 // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                // tslint:disable-next-line: no-floating-promises
                 (async () => {
                     if (!this._uploader) return;
-                    /* eslint-disable @typescript-eslint/no-explicit-any */
+                    /* eslint-disable @typescript-eslint/no-unsafe-call*/
                     try {
                         let filename = await this._uploader.uploadSample(details, data, sample);
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                         (<any>$).notifyClose();
                         Notify.notify('', 'Uploaded "' + filename + '" to ' + category + ' category', 'top', 'center',
                             'far fa-check-circle', 'success');
                     }
                     catch (ex) {
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                         (<any>$).notifyClose();
                         Notify.notify('Failed to upload', getErrorMsg(ex), 'top', 'center',
                             'far fa-times-circle', 'danger');
@@ -266,6 +268,7 @@ export class CameraDataCollectionClientViews {
             }
         }).catch(err => {
             console.error(err);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             this._elements.connectionFailedMessage.textContent = err;
             this.switchView(this._views.connectionFailed);
         });
@@ -275,11 +278,8 @@ export class CameraDataCollectionClientViews {
         return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
-    private async getDevelopmentApiKeys(apiKey: string) {
-        let l = new ClassificationLoader(getStudioEndpoint(), {
-            auth: 'apiKey',
-            apiKey: apiKey
-        });
+    private async getDevelopmentApiKeys(auth: ApiAuth) {
+        let l = new ClassificationLoader(getStudioEndpoint(), auth);
 
         let projectId = await l.getProject();
 

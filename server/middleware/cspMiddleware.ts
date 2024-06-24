@@ -1,6 +1,7 @@
 import express from 'express';
 import { asyncMiddleware } from './asyncMiddleware';
 import crypto from 'crypto';
+import { appConfig } from '@ei/common';
 
 export type NonceRequest = express.Request & { nonce: string };
 
@@ -21,8 +22,7 @@ export class CSPMiddleware {
             res.set('X-Frame-Options', 'DENY');
             res.set('X-XSS-Protection', '1; mode=block');
             res.set('Referrer-Policy', 'strict-origin');
-            if (process.env.K8S_ENVIRONMENT === "sandbox" || process.env.K8S_ENVIRONMENT === "staging"
-                || process.env.K8S_ENVIRONMENT === "prod") {
+            if (appConfig.csp) {
                 res.set('Strict-Transport-Security', 'max-age=63072000');
             }
 
@@ -38,15 +38,9 @@ export class CSPMiddleware {
         let req = _req as NonceRequest;
 
         let csp = `default-src 'self' blob: edgeimpulse.com *.edgeimpulse.com; `;
-        let wsProtocols;
-        if (process.env.K8S_ENVIRONMENT === "prod") {
-            wsProtocols = "wss://studio.edgeimpulse.com wss://remote-mgmt.edgeimpulse.com";
-        } else if (process.env.K8S_ENVIRONMENT === "staging") {
-            wsProtocols = "wss://studio.acc2.edgeimpulse.com wss://remote-mgmt.acc2.edgeimpulse.com";
-        } else if (process.env.K8S_ENVIRONMENT === "sandbox") {
-            wsProtocols = "wss://studio.sandbox.edgeimpulse.com wss://remote-mgmt.sandbox.edgeimpulse.com";
-        } else {
-            wsProtocols = "wss: ws:";
+        let wsProtocols = `wss: ws:`;
+        if (appConfig.domain && appConfig.csp) {
+            wsProtocols = `wss://studio.${appConfig.domain} wss://remote-mgmt.${appConfig.domain}`;
         }
 
         csp += `img-src 'self' 'unsafe-inline' edgeimpulse.com *.edgeimpulse.com www.google-analytics.com www.googletagmanager.com data: ${userCdnPrefix}; `;

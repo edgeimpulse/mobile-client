@@ -1,3 +1,4 @@
+import html from './escape-html-template-tag';
 import jQuery from "../node_modules/@types/jquery/index";
 interface NotifyLibrary {
     notifyClose: () => void;
@@ -25,7 +26,7 @@ export class Notify {
             $.notifyClose();
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
         (<any>$).notify({
             icon: icon,
             title: title,
@@ -52,16 +53,18 @@ export class Notify {
                 enter: undefined,
                 exit: undefined
             },
-            template:
-                '<div data-notify="container" class="alert alert-dismissible alert-{0} alert-notify" role="alert">' +
-                '<span class="alert-icon" data-notify="icon"></span> ' +
-                '<div class="alert-text"> ' +
-                '<span class="alert-title" data-notify="title">{1}</span> ' +
-                '<span data-notify="message">{2}</span>' +
-                '</div>' +
-                '<button type="button" class="close" data-notify="dismiss" aria-label="Close">' +
-                '<span aria-hidden="true">&times;</span></button>' +
-                '</div>'
+            template: (alertClass: string, titleArg: string, messageArg: string) => {
+                let msg = html`
+                    <div data-notify="container" class="alert alert-dismissible alert-${alertClass} alert-notify" role="alert">
+                        <span class="alert-icon" data-notify="icon"></span>
+                        <div class="alert-text">
+                        <span class="alert-title" data-notify="title">${titleArg}</span>
+                        <span data-notify="message">${messageArg}</span>
+                        </div>
+                        <button type="button" class="close" data-notify="dismiss" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    </div>`;
+                return msg.toString();
+            },
         });
     }
 
@@ -81,7 +84,7 @@ export class Notify {
         let modalType = type === 'danger' ? 'error' : type;
 
         return new Promise((resolve) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             swal({
                 title: title,
                 text: message,
@@ -113,7 +116,7 @@ export class Notify {
     static async confirm(title: string, message: string, confirmText: string,
         modalType: 'success' | 'error' | 'warning' | 'info' | 'question',
         btnType: 'default' | 'primary' | 'info' | 'success' | 'warning' | 'danger') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
         let v: { value?: boolean; dismiss?: string } = await swal({
             title: title,
             text: message,
@@ -157,7 +160,7 @@ export class Notify {
     static async prompt(title: string, message: string, confirmText: string, currentValue: string,
         modalType: 'success' | 'error' | 'warning' | 'info' | 'question',
         btnType: 'default' | 'primary' | 'info' | 'success' | 'warning' | 'danger') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
         let v: { value?: string; dismiss?: string } = await swal({
             title: title,
             text: message,

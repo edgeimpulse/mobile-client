@@ -1,0 +1,250 @@
+{
+    "root": true,
+    "env": {
+        "es6": true,
+        "node": true
+    },
+    "ignorePatterns": [
+        "/**/shared/api-definition/model/",
+        "/**/shared/api-definition/server.ts"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "project": "tsconfig.json",
+        "sourceType": "module"
+    },
+    "plugins": [
+        "@typescript-eslint",
+        "@stylistic/ts"
+    ],
+    "rules": {
+        "no-restricted-globals": [
+            "error",
+            "name",
+            "close",
+            "history",
+            "length",
+            "open",
+            "parent",
+            "scroll",
+            "self",
+            "stop",
+            "event",
+            {
+                "name": "parseInt",
+                "message": "Use 'Number()' instead of 'parseInt'."
+            },
+            {
+                "name": "parseFloat",
+                "message": "Use 'Number()' instead of 'parseFloat'."
+            }
+        ],
+        "@stylistic/ts/member-delimiter-style": [
+            "off",
+            {
+                "multiline": {
+                    "delimiter": "semi",
+                    "requireLast": true
+                },
+                "singleline": {
+                    "delimiter": "semi",
+                    "requireLast": false
+                }
+            }
+        ],
+        "indent": "off",
+        "@stylistic/ts/indent": [
+            "off",
+            4,
+            {
+                "SwitchCase": 1,
+                "VariableDeclarator": 1,
+                "outerIIFEBody": 1,
+                "MemberExpression": 1,
+                "FunctionDeclaration": {
+                    "parameters": 1,
+                    "body": 1
+                },
+                "FunctionExpression": {
+                    "parameters": 1,
+                    "body": 1
+                },
+                "CallExpression": {
+                    "arguments": 1
+                },
+                "ArrayExpression": 1,
+                "ObjectExpression": 1,
+                "ImportDeclaration": 1,
+                "flatTernaryExpressions": false,
+                "ignoreComments": false
+            }
+        ],
+        "@typescript-eslint/adjacent-overload-signatures": "error",
+        "@typescript-eslint/array-type": [
+            "off",
+            {
+                "default": "array"
+            }
+        ],
+        "@typescript-eslint/ban-types": [
+            "off",
+            {
+                "types": {
+                    "Object": false,
+                    "Function": {
+                        "message": "Avoid using the `Function` type. Prefer a specific function type, like `() => void`."
+                    },
+                    "Boolean": {
+                        "message": "Avoid using the `Boolean` type. Did you mean `boolean`?"
+                    },
+                    "Number": {
+                        "message": "Avoid using the `Number` type. Did you mean `number`?"
+                    },
+                    "String": {
+                        "message": "Avoid using the `String` type. Did you mean `string`?"
+                    },
+                    "Symbol": {
+                        "message": "Avoid using the `Symbol` type. Did you mean `symbol`?"
+                    },
+                    "{}": false
+                }
+            }
+        ],
+        "@typescript-eslint/consistent-type-assertions": "off",
+        "@typescript-eslint/consistent-type-definitions": "off",
+        "@typescript-eslint/dot-notation": "error",
+        "@typescript-eslint/explicit-function-return-type": "off",
+        "@typescript-eslint/explicit-member-accessibility": [
+            "error",
+            {
+                "accessibility": "no-public"
+            }
+        ],
+        "@typescript-eslint/explicit-module-boundary-types": "off",
+        "@typescript-eslint/naming-convention": [
+            "error",
+            {
+                "selector": "variable",
+                "format": ["camelCase", "UPPER_CASE", "PascalCase"],
+                "leadingUnderscore": "allow",
+                "trailingUnderscore": "allow"
+            }
+        ],
+        "@typescript-eslint/no-empty-function": "error",
+        "@typescript-eslint/no-empty-interface": "error",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-floating-promises": "error",
+        "@typescript-eslint/no-misused-promises": [
+            "error",
+            {
+              "checksVoidReturn": {
+                "arguments": false,
+                "returns": false,
+                "properties": false
+              }
+            }
+          ],
+        "@typescript-eslint/no-misused-new": "error",
+        "@typescript-eslint/no-namespace": "error",
+        "@typescript-eslint/no-parameter-properties": "off",
+        "@typescript-eslint/no-shadow": [
+            "error",
+            {
+                "hoist": "all"
+            }
+        ],
+        "@typescript-eslint/no-unused-expressions": "error",
+        "@typescript-eslint/no-use-before-define": "off",
+        "@typescript-eslint/no-var-requires": "off",
+        "@typescript-eslint/prefer-for-of": "off",
+        "@typescript-eslint/prefer-function-type": "error",
+        "@typescript-eslint/prefer-namespace-keyword": "error",
+        "@typescript-eslint/quotes": "off",
+        "@typescript-eslint/semi": ["error", "always"],
+        "@typescript-eslint/triple-slash-reference": [
+            "error",
+            {
+                "path": "always",
+                "types": "prefer-import",
+                "lib": "always"
+            }
+        ],
+        "@typescript-eslint/typedef": "off",
+        "@typescript-eslint/unbound-method": "error",
+        "@typescript-eslint/unified-signatures": "error",
+        "@typescript-eslint/no-unsafe-call": "error",
+        "@typescript-eslint/no-unsafe-member-access": "error",
+        "@typescript-eslint/no-unsafe-argument": "error",
+        "@typescript-eslint/no-unsafe-assignment": "error",
+        "@typescript-eslint/no-this-alias": "off",
+        "@typescript-eslint/prefer-as-const": "off",
+        "eslint-plugin-unicorn/no-useless-spread": "off",
+        "arrow-parens": ["off", "always"],
+        "brace-style": ["error", "stroustrup", { "allowSingleLine": true }],
+        "comma-dangle": "off",
+        "complexity": "off",
+        "constructor-super": "error",
+        "curly": ["error", "multi-line"],
+        "eqeqeq": ["error", "smart"],
+        "guard-for-in": "error",
+        "id-denylist": "error",
+        "id-match": "error",
+        "max-classes-per-file": "off",
+        "max-len": [
+            "error",
+            {
+                "ignoreStrings": true,
+                "ignoreTemplateLiterals": true,
+                "ignoreRegExpLiterals": true,
+                "code": 120
+            }
+        ],
+        "new-parens": "error",
+        "no-caller": "error",
+        "no-cond-assign": "error",
+        "no-console": "off",
+        "no-constant-binary-expression": "error",
+        "no-constant-condition": ["error", { "checkLoops": false }],
+        "no-debugger": "error",
+        "no-empty": "error",
+        "no-eval": "error",
+        "no-fallthrough": "off",
+        "no-invalid-this": "off",
+        "no-irregular-whitespace": "error",
+        "no-inner-declarations": "off",
+        "no-new-wrappers": "error",
+        "no-shadow": "off",
+        "no-async-promise-executor": "off",
+        "no-throw-literal": "error",
+        "no-trailing-spaces": "error",
+        "no-undef-init": "error",
+        "no-underscore-dangle": "off",
+        "no-unsafe-finally": "error",
+        "no-unused-expressions": "off",
+        "no-unused-labels": "error",
+        "no-use-before-define": "off",
+        "no-var": "off",
+        "object-shorthand": "off",
+        "one-var": ["error", "never"],
+        "prefer-const": "off",
+        "quotes": "off",
+        "no-bitwise": "error",
+        "radix": "error",
+        "spaced-comment": [
+            "off",
+            "always",
+            {
+                "markers": ["/"]
+            }
+        ],
+        "use-isnan": "error",
+        "valid-typeof": "off",
+        "no-restricted-syntax": [
+            "error",
+            {
+                "selector": "MemberExpression[type=MemberExpression][object.type=MemberExpression][object.object.type=Identifier][object.object.name=process][object.property.type=Identifier][object.property.name=env][property.type=Identifier][property.name=K8S_ENVIRONMENT]",
+                "message": "K8S_ENVIRONMENT environment variable is not allowed. Please use appConfig instead."
+            }
+        ]
+    }
+}

@@ -6,8 +6,8 @@ import * as sentry from '@sentry/node';
 import { CSPMiddleware, NonceRequest } from './middleware/cspMiddleware';
 import cors from 'cors';
 import fs from 'fs';
-import { Logger } from './logging/logger';
 import compression from 'compression';
+import { Logger, appConfig } from '@ei/common';
 
 const log = new Logger("mobileclient");
 
@@ -36,7 +36,8 @@ if (process.env.HTTPS_METHOD === "redirect") {
     studioApp.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
         if (req.secure) {
             next();
-        } else {
+        }
+        else {
             res.redirect('https://' + req.headers.host + req.url);
         }
     });
@@ -47,7 +48,8 @@ if (process.env.HTTPS_METHOD === "redirect") {
     studioApp.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
         if (req.secure) {
             next();
-        } else {
+        }
+        else {
             res.redirect('https://' + req.headers.host + req.url);
         }
     });
@@ -74,9 +76,9 @@ if (process.env.NODE_ENV === 'development') {
     studioApp.disable('view cache');
 }
 
-if (process.env.K8S_ENVIRONMENT === 'staging') {
+if (appConfig.mobileClient.server) {
     const corsOptions = {
-        origin: ["https://smartphone.acc2.edgeimpulse.com"],
+        origin: [`https://smartphone.${appConfig.domain}`],
         credentials: true
     };
     studioApp.options('*', cors(corsOptions));
@@ -93,8 +95,6 @@ function getBaseView(req: NonceRequest) {
         devMode: process.env.NODE_ENV === 'development',
         nonce: req.nonce,
         currentYear: new Date().getFullYear(),
-        // tslint:disable-next-line: no-unsafe-any
-        includeAnalytics: process.env.K8S_ENVIRONMENT === "prod" && !req.cookies?.ctx
     };
 
     return vm;

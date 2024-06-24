@@ -1,4 +1,4 @@
-import { getAuth, getDeviceId, storeApiKey, storeDeviceId, getStudioEndpoint, ApiAuth } from "./settings";
+import { getAuth, getDeviceId, storeApiKeyAndImpulseId, storeDeviceId, getStudioEndpoint, ApiAuth } from "./settings";
 import { ISensor } from "./sensors/isensor";
 import { Uploader } from "./uploader";
 import { SampleDetails } from "./models";
@@ -89,14 +89,14 @@ export class TimeSeriesDataCollectionClientViews {
 
         // data collection can only be done with apiKey
         if (auth && auth.auth === 'apiKey') {
-            storeApiKey(auth.apiKey);
+            storeApiKeyAndImpulseId(auth.apiKey, auth.impulseId);
 
             window.history.replaceState(null, '', window.location.pathname);
 
             try {
                 this.switchView(this._views.loading);
 
-                let devKeys = await this.getDevelopmentApiKeys(auth.apiKey);
+                let devKeys = await this.getDevelopmentApiKeys(auth);
                 if (devKeys.hmacKey) {
                     this._hmacKey = devKeys.hmacKey;
                 }
@@ -231,17 +231,18 @@ export class TimeSeriesDataCollectionClientViews {
                 console.log('details', details, 'data', data, 'sample', sample);
 
                 // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                // tslint:disable-next-line: no-floating-promises
                 (async () => {
                     if (!this._uploader) return;
                     /* eslint-disable @typescript-eslint/no-explicit-any */
                     try {
                         let filename = await this._uploader.uploadSample(details, data, sample);
+                        // eslint-disable-next-line
                         (<any>$).notifyClose();
                         Notify.notify('', 'Uploaded "' + filename + '" to ' + category + ' category', 'top', 'center',
-                            'far fa-check-circle', 'success');
+                        'far fa-check-circle', 'success');
                     }
                     catch (ex) {
+                        // eslint-disable-next-line
                         (<any>$).notifyClose();
                         Notify.notify('Failed to upload', getErrorMsg(ex), 'top', 'center',
                             'far fa-times-circle', 'danger');
@@ -362,6 +363,7 @@ export class TimeSeriesDataCollectionClientViews {
             }
         }).catch(err => {
             console.error(err);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             this._elements.connectionFailedMessage.textContent = err;
             this.switchView(this._views.connectionFailed);
         });
@@ -371,16 +373,13 @@ export class TimeSeriesDataCollectionClientViews {
         return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
-    private async getDevelopmentApiKeys(apiKey: string) {
-        let l = new ClassificationLoader(getStudioEndpoint(), {
-            auth: 'apiKey',
-            apiKey: apiKey
-        });
+    private async getDevelopmentApiKeys(auth: ApiAuth) {
+        const loader = new ClassificationLoader(getStudioEndpoint(), auth);
 
-        let projectId = await l.getProject();
+        let projectId = await loader.getProject();
 
         try {
-            return await l.getDevelopmentKeys(projectId.id);
+            return await loader.getDevelopmentKeys(projectId.id);
         }
         catch (ex) {
             console.warn('Could not find development keys for project ' + projectId, ex);

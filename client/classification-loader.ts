@@ -1,11 +1,12 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Emitter } from "./typed-event-emitter";
 import { EdgeImpulseClassifier } from "./classifier";
-import { AxiosStatic } from '../node_modules/axios';
 import { getErrorMsg } from './utils';
 import { WasmRuntimeModule } from './classifier';
 import { ApiAuth } from "./settings";
-
-declare let axios: AxiosStatic;
 
 declare global {
     interface Window {
@@ -22,12 +23,16 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
     private _wsHost: string;
     private _auth: ApiAuth;
     private _project: { id: number, owner: string, name: string, studioUrl: string } | undefined;
+    private _impulseIdQs: string;
 
     constructor(studioHostUrl: string, auth: ApiAuth) {
         super();
         this._studioHost = studioHostUrl + '/v1/api';
         this._wsHost = studioHostUrl.replace('http', 'ws');
         this._auth = auth;
+        this._impulseIdQs = typeof this._auth.impulseId === 'number' ?
+            `impulseId=${encodeURIComponent(this._auth.impulseId)}` :
+            '';
     }
 
     getProjectInfo() {
@@ -234,7 +239,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
     private async downloadDeployment(projectId: number, deployType: 'wasm' | 'wasm-browser-simd'): Promise < Blob > {
         return new Promise((resolve, reject) => {
             const x = new XMLHttpRequest();
-            x.open('GET', `${this._studioHost}/${projectId}/deployment/download?type=${deployType}&modelType=float32`);
+            x.open('GET', `${this._studioHost}/${projectId}/deployment/download?type=${deployType}&modelType=float32&${this._impulseIdQs}`);
             x.onload = () => {
                 if (x.status !== 200) {
                     const reader = new FileReader();
@@ -264,35 +269,33 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         let ws = await this.getWebsocket(projectId);
 
         // select f32 models for all keras blocks
-        let impulseRes = await axios({
-            url: `${this._studioHost}/${projectId}/impulse`,
+        let impulseRes = await fetch(`${this._studioHost}/${projectId}/impulse?${this._impulseIdQs}`, {
             method: 'GET',
             headers: {
                 "x-api-key": this._auth.apiKey,
                 "Content-Type": "application/json"
             }
         });
-        if (impulseRes.status !== 200) {
+        if (!impulseRes.ok) {
             throw new Error('Failed to start deployment: ' + impulseRes.status + ' - ' + impulseRes.statusText);
         }
 
-        let jobRes = await axios({
-            url: `${this._studioHost}/${projectId}/jobs/build-ondevice-model?type=${deployType}`,
+        let jobRes = await fetch(`${this._studioHost}/${projectId}/jobs/build-ondevice-model?type=${deployType}&${this._impulseIdQs}`, {
             method: "POST",
             headers: {
                 "x-api-key": this._auth.apiKey,
                 "Content-Type": "application/json"
             },
-            data: {
+            body: JSON.stringify({
                 engine: 'tflite',
                 modelType: 'float32'
-            }
+            })
         });
-        if (jobRes.status !== 200) {
+        if (!jobRes.ok) {
             throw new Error('Failed to start deployment: ' + jobRes.status + ' - ' + jobRes.statusText);
         }
 
-        let jobData: { success: true; id: number } | { success: false; error: string } = jobRes.data;
+        let jobData: { success: true; id: number } | { success: false; error: string } = await jobRes.json();
         if (!jobData.success) {
             throw new Error(jobData.error);
         }
@@ -313,15 +316,14 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
                         throw new Error('Cannot build deployment if not authenticated via API key');
                     }
 
-                    let jobStatus = await axios({
-                        url: `${this._studioHost}/${projectId}/jobs/${jobId}/status`,
+                    let jobStatus = await fetch(`${this._studioHost}/${projectId}/jobs/${jobId}/status`, {
                         method: "GET",
                         headers: {
                             "x-api-key": this._auth.apiKey,
                             "Content-Type": "application/json"
                         }
                     });
-                    if (jobStatus.status !== 200) {
+                    if (!jobStatus.ok) {
                         throw new Error('Failed to start deployment: ' + jobStatus.status + ' - ' +
                             jobStatus.statusText);
                     }
@@ -337,7 +339,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
                             finished?: Date;
                             finishedSuccessful?: boolean;
                         };
-                    } | { success: false; error: string } = jobStatus.data;
+                    } | { success: false; error: string } = await jobStatus.json();
 
                     if (!status.success) {
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -415,8 +417,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
             headers["x-api-key"] = this._auth.apiKey;
         }
 
-        let tokenRes = await axios({
-            url: `${this._studioHost}/${projectId}/socket-token`,
+        let tokenRes = await fetch(`${this._studioHost}/${projectId}/socket-token`, {
             method: "GET",
             headers: headers,
         });
@@ -430,7 +431,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
                 socketToken: string;
                 expires: Date;
             };
-        } | { success: false; error: string } = tokenRes.data;
+        } | { success: false; error: string } = await tokenRes.json();
 
         if (!tokenData.success) {
             throw new Error(tokenData.error);

@@ -2,6 +2,7 @@ const REMOTE_MANAGEMENT_ENDPOINT = 'wss://remote-mgmt.edgeimpulse.com';
 const INGESTION_API = 'https://ingestion.edgeimpulse.com';
 const STUDIO_ENDPOINT = 'https://studio.edgeimpulse.com';
 const LS_API_KEY = 'apiKey';
+const LS_IMPULSE_ID = 'impulseId';
 const LS_KEYWORD = 'keyword';
 const LS_SAMPLE_LENGTH = 'sampleLength';
 const LS_FREQUENCY = 'frequency';
@@ -15,10 +16,12 @@ const getRandomString = () =>
 
 export type ApiAuth = {
     auth: 'apiKey',
-    apiKey: string
+    apiKey: string,
+    impulseId: number | undefined,
 } | {
     auth: 'publicProject',
     projectId: number,
+    impulseId: number | undefined,
 };
 
 export function getAuth(): ApiAuth | undefined {
@@ -26,11 +29,16 @@ export function getAuth(): ApiAuth | undefined {
     const projectIdQs = new URLSearchParams(window.location.search).get('publicProjectId');
     const apiKeyLocalStorage = localStorage.getItem(LS_API_KEY);
 
+    const impulseIdStr = new URLSearchParams(window.location.search).get('impulseId') ||
+        localStorage.getItem(LS_IMPULSE_ID);
+    const impulseId = impulseIdStr ? Number(impulseIdStr) : undefined;
+
     // api key in qs? go ahead.
     if (apiKeyQs) {
         return {
             auth: 'apiKey',
-            apiKey: apiKeyQs
+            apiKey: apiKeyQs,
+            impulseId: impulseId,
         };
     }
 
@@ -38,7 +46,8 @@ export function getAuth(): ApiAuth | undefined {
     if (projectIdQs) {
         return {
             auth: 'publicProject',
-            projectId: Number(projectIdQs)
+            projectId: Number(projectIdQs),
+            impulseId: impulseId,
         };
     }
 
@@ -46,7 +55,8 @@ export function getAuth(): ApiAuth | undefined {
     if (apiKeyLocalStorage) {
         return {
             auth: 'apiKey',
-            apiKey: apiKeyLocalStorage
+            apiKey: apiKeyLocalStorage,
+            impulseId: impulseId,
         };
     }
 
@@ -54,9 +64,22 @@ export function getAuth(): ApiAuth | undefined {
     return undefined;
 }
 
-export const storeApiKey = (apiKey: string) => {
-    console.log('storeApiKey', apiKey, window.location.search);
+/**
+ * We store both the API Key and the impulse ID here because they're always set at the same time
+ * (at least from the Studio) and are tightly coupled. Cannot set the impulse ID w/o also setting
+ * which project you want to connect to.
+ * @param apiKey
+ * @param impulseId
+ */
+export const storeApiKeyAndImpulseId = (apiKey: string, impulseId: number | undefined) => {
+    console.log('storeApiKeyAndImpulseId', apiKey, 'impulseId', impulseId, 'search', window.location.search);
     localStorage.setItem(LS_API_KEY, apiKey);
+    if (typeof impulseId === 'undefined') {
+        localStorage.removeItem(LS_IMPULSE_ID);
+    }
+    else {
+        localStorage.setItem(LS_IMPULSE_ID, impulseId.toString());
+    }
 };
 
 export const getKeyword = () =>

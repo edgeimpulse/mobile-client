@@ -1,4 +1,7 @@
-// tslint:disable: no-unsafe-any
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
 /*
  * Copyright (c) 2014, Yahoo Inc. All rights reserved.

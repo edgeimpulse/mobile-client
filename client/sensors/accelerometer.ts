@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { ISensor, ISamplingOptions } from "./isensor";
 import { Sample } from "../models";
 
@@ -26,17 +27,24 @@ export class AccelerometerSensor implements ISensor {
             return Promise.resolve(true);
         }
 
-        return (DeviceMotionEvent as any).requestPermission().then((response: string) => {
-            return response === 'granted';
-        }).catch((err: Error | string) => {
-            let msg = typeof err === 'string' ? err : (err.message || err.toString());
-            if (msg.indexOf('requires a user gesture to prompt') > -1) {
-                return Promise.resolve(false);
-            }
-            else {
-                throw err;
-            }
-        });
+        // eslint-disable-next-line
+        return (DeviceMotionEvent as any)
+            .requestPermission()
+            .then((response: string) => {
+                return response === 'granted';
+            })
+            .catch((err: Error | string) => {
+                let msg =
+                    typeof err === 'string'
+                        ? err
+                        : err.message || err.toString();
+                if (msg.indexOf('requires a user gesture to prompt') > -1) {
+                    return Promise.resolve(false);
+                }
+                else {
+                    throw err;
+                }
+            });
     }
 
     getProperties() {

@@ -1,4 +1,7 @@
-// tslint:disable: no-unsafe-any
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
 /*
  * Copyright (c) 2015, Yahoo Inc. All rights reserved.
@@ -12,7 +15,7 @@ import glob from 'glob';
 import Handlebars from 'handlebars';
 import fs from 'fs';
 import path from 'path';
-// tslint:disable-next-line: no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const utils = require('./utils');
 
 // -----------------------------------------------------------------------------
@@ -99,7 +102,8 @@ export class ExpressHandlebars {
             // templates promise and a namespace.
             if (typeof dir === 'string') {
                 dirPath = dir;
-            } else if (typeof dir === 'object') {
+            }
+            else if (typeof dir === 'object') {
                 dirTemplates = dir.templates;
                 dirNamespace = dir.namespace;
                 dirPath      = dir.dir;
@@ -192,7 +196,6 @@ export class ExpressHandlebars {
 
         return Promise.all([
             this.getTemplate(filePath, { cache: options.cache }),
-            // tslint:disable-next-line:no-promise-as-boolean
             options.partials || this.getPartials({ cache: options.cache }),
         ]).then((templates) => {
             if (!options) options = { };
@@ -260,6 +263,7 @@ export class ExpressHandlebars {
             partials: partials,
         };
 
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
         this.render(viewPath, context, options)
             .then((body) => {
                 let layoutPath = this._resolveLayoutPath(options.layout);
@@ -299,10 +303,8 @@ export class ExpressHandlebars {
         if (!options) options = { };
 
         let cache = this._fsCache;
-        // tslint:disable-next-line:no-promise-as-boolean
         let dir   = options.cache && cache[dirPath];
 
-        // tslint:disable-next-line:no-promise-as-boolean
         if (dir) {
             return dir.then((d: any) => {
                 return d.concat();
@@ -323,7 +325,8 @@ export class ExpressHandlebars {
             }, (err, d) => {
                 if (err) {
                     reject(err);
-                } else {
+                }
+                else {
                     resolve(d);
                 }
             });
@@ -342,10 +345,8 @@ export class ExpressHandlebars {
         if (!options) options = { };
 
         let cache = this._fsCache;
-        // tslint:disable-next-line:no-promise-as-boolean
         let file  = options.cache && cache[filePath];
 
-        // tslint:disable-next-line:no-promise-as-boolean
         if (file) {
             return file;
         }
@@ -356,7 +357,8 @@ export class ExpressHandlebars {
             fs.readFile(filePath, 'utf8', (err, f) => {
                 if (err) {
                     reject(err);
-                } else {
+                }
+                else {
                     resolve(f);
                 }
             });

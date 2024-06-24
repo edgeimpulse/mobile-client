@@ -53,6 +53,7 @@ export class Positional9DOFSensor implements ISensor {
             throw new Error('9DOF not present on this device');
         }
         /* eslint-disable @typescript-eslint/no-explicit-any */
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (typeof (<any>DeviceMotionEvent).requestPermission !== 'function') {
             return true;
         }
@@ -62,6 +63,7 @@ export class Positional9DOFSensor implements ISensor {
         }
 
         try {
+            // eslint-disable-next-line
             const response = await (<any>DeviceMotionEvent).requestPermission();
             return response === 'granted';
         }

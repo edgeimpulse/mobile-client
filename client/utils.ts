@@ -62,6 +62,7 @@ export const createSignature = async (
     // Convert back to Hex
     const b = new Uint8Array(signature);
     return Array.prototype.map
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
         .call(b, x => ('00' + x.toString(16)).slice(-2))
         .join('');
 };
