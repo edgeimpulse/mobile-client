@@ -1,3 +1,7 @@
+/**
+ * Apache 2.0 licensed
+ * https://github.com/GoogleChromeLabs/wasm-feature-detect/blob/04ff9f5e31363a50b7147de05744312f589e81fc/LICENSE
+ */
 window.wasmFeatureDetect = {
     bigInt: () => (async e => {
         try {

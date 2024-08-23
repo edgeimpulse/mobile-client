@@ -11,7 +11,7 @@
 
 'use strict';
 
-import glob from 'glob';
+import { glob } from 'glob';
 import Handlebars from 'handlebars';
 import fs from 'fs';
 import path from 'path';
@@ -318,18 +318,9 @@ export class ExpressHandlebars {
 
         // Optimistically cache dir promise to reduce file system I/O, but remove
         // from cache if there was a problem.
-        dir = cache[dirPath] = new Promise((resolve, reject) => {
-            glob(pattern, {
-                cwd   : dirPath,
-                follow: true
-            }, (err, d) => {
-                if (err) {
-                    reject(err);
-                }
-                else {
-                    resolve(d);
-                }
-            });
+        dir = cache[dirPath] = glob(pattern, {
+            cwd   : dirPath,
+            follow: true
         });
 
         return dir.then((d: any) => {
