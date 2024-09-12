@@ -4,7 +4,9 @@ const STUDIO_ENDPOINT = 'https://studio.edgeimpulse.com';
 const LS_API_KEY = 'apiKey';
 const LS_IMPULSE_ID = 'impulseId';
 const LS_KEYWORD = 'keyword';
+const LS_LABEL = 'label';
 const LS_SAMPLE_LENGTH = 'sampleLength';
+const LS_CATEGORY = 'category';
 const LS_FREQUENCY = 'frequency';
 const LS_DEVICE_ID_KEY = 'deviceId';
 const LS_INGESTION_API = 'ingestionApi';
@@ -91,6 +93,27 @@ export const storeKeyword = (keyword: string) => {
     localStorage.setItem(LS_KEYWORD, keyword);
 };
 
+export const getLabel = () =>
+    new URLSearchParams(window.location.search).get('label') ||
+    localStorage.getItem(LS_LABEL) ||
+    '';
+export const storeLabel = (label: string) => {
+    console.log('storeLabel', label, window.location.search);
+    localStorage.setItem(LS_LABEL, label);
+};
+export const getCategory = () => {
+    const validCategories = ['training', 'testing', 'split'];
+    const categoryFromURL = new URLSearchParams(window.location.search).get('category');
+    if (categoryFromURL && validCategories.includes(categoryFromURL)) {
+        return categoryFromURL;
+    }
+    console.log('invalid category in URL', categoryFromURL);
+    return localStorage.getItem(LS_CATEGORY)|| '';
+};
+export const storeCategory = (category: string) => {
+    console.log('storeSampleLength', category, window.location.search);
+    localStorage.setItem(LS_CATEGORY, category.toString());
+};
 export const getFrequency = () =>
     Number(new URLSearchParams(window.location.search).get('frequency')) ||
     Number(localStorage.getItem(LS_FREQUENCY)) ||

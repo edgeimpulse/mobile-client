@@ -1,4 +1,5 @@
-import { getAuth, getDeviceId, storeApiKeyAndImpulseId, storeDeviceId, getStudioEndpoint, ApiAuth } from "./settings";
+import { ApiAuth, getAuth, getDeviceId, getLabel, getSampleLength, getStudioEndpoint, getCategory,
+    storeApiKeyAndImpulseId, storeCategory, storeDeviceId, storeLabel, storeSampleLength } from "./settings";
 import { ISensor } from "./sensors/isensor";
 import { Uploader } from "./uploader";
 import { SampleDetails } from "./models";
@@ -48,6 +49,9 @@ export class TimeSeriesDataCollectionClientViews {
         console.log('init time-series-collection-views');
         storeDeviceId(getDeviceId());
 
+        storeLabel(getLabel());
+        storeSampleLength(getSampleLength());
+        storeCategory(getCategory());
         let sensorIcon: string;
         let activeSensor: ISensor;
         this._activeSensor = sensorType;
@@ -101,11 +105,11 @@ export class TimeSeriesDataCollectionClientViews {
                     this._hmacKey = devKeys.hmacKey;
                 }
 
-                this._elements.labelText.textContent = localStorage.getItem(`last-${this._activeSensor}-label`)
+                this._elements.labelText.textContent = getLabel() || localStorage.getItem(`last-${this._activeSensor}-label`)
                     || 'unknown';
-                this._elements.lengthText.textContent = localStorage.getItem(`last-${this._activeSensor}-length`)
-                    || '1';
-                this._elements.categoryText.textContent = localStorage.getItem(`last-${this._activeSensor}-category`)
+                this._elements.lengthText.textContent = !isNaN(getSampleLength()) ? getSampleLength().toString() :
+                    (localStorage.getItem(`last-${this._activeSensor}-length`) || '1');
+                this._elements.categoryText.textContent = getCategory() || localStorage.getItem(`last-${this._activeSensor}-category`)
                     || 'split';
                 this._elements.categorySelect.value = this._elements.categoryText.textContent;
 

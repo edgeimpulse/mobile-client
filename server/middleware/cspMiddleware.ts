@@ -35,6 +35,11 @@ export class CSPMiddleware {
         unsafeEval = true,
         userCdnPrefix: string
     ) {
+
+        const studioPort = Number(process.env.STUDIO_PORT) || 4800;
+        const ingestionPort = Number(process.env.INGESTION_PORT) || 4810;
+        const remoteMgmtPort = Number(process.env.REMOTE_MGMT_PORT) || 4820;
+
         let req = _req as NonceRequest;
 
         let csp = `default-src 'self' blob: edgeimpulse.com *.edgeimpulse.com; `;
@@ -46,12 +51,12 @@ export class CSPMiddleware {
         csp += `img-src 'self' 'unsafe-inline' edgeimpulse.com *.edgeimpulse.com www.google-analytics.com www.googletagmanager.com data: ${userCdnPrefix}; `;
         csp += "media-src 'self' edgeimpulse.com *.edgeimpulse.com blob: data: mediastream:; ";
         csp += `script-src 'self' ${unsafeEval ? "'unsafe-eval' " : ""} 'nonce-${req.nonce}' edgeimpulse.com *.edgeimpulse.com *.hsforms.net *.hsforms.com www.google-analytics.com fonts.googleapis.com youtube.com *.youtube.com browser.sentry-cdn.com js.sentry-cdn.com *.sentry.io www.googletagmanager.com d3js.org blob:; `;
-        csp += `connect-src 'self' edgeimpulse.com *.edgeimpulse.com www.google-analytics.com *.hsforms.net *.hsforms.com *.amazonaws.com *.googleapis.com fonts.googleapis.com sentry.io *.sentry.io youtube.com *.youtube.com *.doubleclick.net localhost:4800 localhost:4810 localhost:4820 host.docker.internal:4800 host.docker.internal:4810 host.docker.internal:4820 data: ${wsProtocols}; `;
+        csp += `connect-src 'self' edgeimpulse.com *.edgeimpulse.com www.google-analytics.com *.hsforms.net *.hsforms.com *.amazonaws.com *.googleapis.com fonts.googleapis.com sentry.io *.sentry.io youtube.com *.youtube.com *.doubleclick.net localhost:${studioPort} localhost:${ingestionPort} localhost:${remoteMgmtPort} host.docker.internal:${studioPort} host.docker.internal:${ingestionPort} host.docker.internal:${remoteMgmtPort} data: ${wsProtocols}; `;
         csp += "style-src 'self' 'unsafe-inline' edgeimpulse.com *.edgeimpulse.com fonts.googleapis.com; ";
         csp += "base-uri 'self' edgeimpulse.com *.edgeimpulse.com; ";
         csp += "frame-ancestors 'self' edgeimpulse.com *.edgeimpulse.com mltools.arduino.cc mltools.oniudra.cc skillbuilder.optra.com skillbuilder.optraportal.com; ";
         csp += "form-action 'self'; ";
-        csp += "frame-src 'self' edgeimpulse.com *.edgeimpulse.com youtube.com *.youtube.com localhost:4820; ";
+        csp += `frame-src 'self' edgeimpulse.com *.edgeimpulse.com youtube.com *.youtube.com localhost:${remoteMgmtPort}; `;
         csp += "font-src 'self' edgeimpulse.com *.edgeimpulse.com fonts.gstatic.com; ";
         csp += "report-uri https://o333795.ingest.sentry.io/api/1887001/security/?sentry_key=3ad6405147234fac8ab65061c25d2334; ";
 
