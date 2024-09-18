@@ -15,7 +15,7 @@
     },
     "plugins": [
         "@typescript-eslint",
-        "@stylistic/ts"
+        "@stylistic"
     ],
     "rules": {
         "no-restricted-globals": [
@@ -39,7 +39,7 @@
                 "message": "Use 'Number()' instead of 'parseFloat'."
             }
         ],
-        "@stylistic/ts/member-delimiter-style": [
+        "@stylistic/member-delimiter-style": [
             "off",
             {
                 "multiline": {
@@ -52,8 +52,7 @@
                 }
             }
         ],
-        "indent": "off",
-        "@stylistic/ts/indent": [
+        "@stylistic/indent": [
             "off",
             4,
             {
@@ -77,6 +76,13 @@
                 "ImportDeclaration": 1,
                 "flatTernaryExpressions": false,
                 "ignoreComments": false
+            }
+        ],
+        "@stylistic/comma-spacing": [
+            "error",
+            {
+                "before": false,
+                "after": true
             }
         ],
         "@typescript-eslint/adjacent-overload-signatures": "error",
@@ -160,7 +166,7 @@
         "@typescript-eslint/prefer-function-type": "error",
         "@typescript-eslint/prefer-namespace-keyword": "error",
         "@typescript-eslint/quotes": "off",
-        "@typescript-eslint/semi": ["error", "always"],
+        "@stylistic/semi": ["error", "always"],
         "@typescript-eslint/triple-slash-reference": [
             "error",
             {
@@ -178,10 +184,13 @@
         "@typescript-eslint/no-unsafe-assignment": "error",
         "@typescript-eslint/no-this-alias": "off",
         "@typescript-eslint/prefer-as-const": "off",
+        "no-useless-constructor": "off",
+        "@typescript-eslint/no-useless-constructor": "error",
         "eslint-plugin-unicorn/no-useless-spread": "off",
-        "arrow-parens": ["off", "always"],
-        "brace-style": ["error", "stroustrup", { "allowSingleLine": true }],
-        "comma-dangle": "off",
+        "@stylistic/array-bracket-spacing": ["error", "always"],
+        "@stylistic/arrow-parens": ["off", "always"],
+        "@stylistic/brace-style": ["error", "stroustrup", { "allowSingleLine": true }],
+        "@stylistic/comma-dangle": "off",
         "complexity": "off",
         "constructor-super": "error",
         "curly": ["error", "multi-line"],
@@ -190,7 +199,7 @@
         "id-denylist": "error",
         "id-match": "error",
         "max-classes-per-file": "off",
-        "max-len": [
+        "@stylistic/max-len": [
             "error",
             {
                 "ignoreStrings": true,
@@ -199,7 +208,7 @@
                 "code": 120
             }
         ],
-        "new-parens": "error",
+        "@stylistic/new-parens": "error",
         "no-caller": "error",
         "no-cond-assign": "error",
         "no-console": "off",
@@ -212,13 +221,18 @@
         "no-invalid-this": "off",
         "no-irregular-whitespace": "error",
         "no-inner-declarations": "off",
+        "no-new-object": "error",
+        "no-array-constructor": "error",
+        "no-iterator": "error",
         "no-new-wrappers": "error",
         "no-shadow": "off",
         "no-async-promise-executor": "off",
         "no-throw-literal": "error",
-        "no-trailing-spaces": "error",
+        "@stylistic/no-trailing-spaces": "error",
+        "@stylistic/no-mixed-spaces-and-tabs": "error",
         "no-undef-init": "error",
         "no-underscore-dangle": "off",
+        "no-unreachable": "error",
         "no-unsafe-finally": "error",
         "no-unused-expressions": "off",
         "no-unused-labels": "error",
@@ -226,17 +240,19 @@
         "no-var": "off",
         "object-shorthand": "off",
         "one-var": ["error", "never"],
-        "prefer-const": "off",
+        "prefer-rest-params": "error",
         "quotes": "off",
         "no-bitwise": "error",
         "radix": "error",
-        "spaced-comment": [
+        "@stylistic/spaced-comment": [
             "off",
             "always",
             {
                 "markers": ["/"]
             }
         ],
+        "@stylistic/type-generic-spacing": ["error"],
+        "@stylistic/type-named-tuple-spacing": ["error"],
         "use-isnan": "error",
         "valid-typeof": "off",
         "no-restricted-syntax": [

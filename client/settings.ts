@@ -102,7 +102,7 @@ export const storeLabel = (label: string) => {
     localStorage.setItem(LS_LABEL, label);
 };
 export const getCategory = () => {
-    const validCategories = ['training', 'testing', 'split'];
+    const validCategories = [ 'training', 'testing', 'split' ];
     const categoryFromURL = new URLSearchParams(window.location.search).get('category');
     if (categoryFromURL && validCategories.includes(categoryFromURL)) {
         return categoryFromURL;

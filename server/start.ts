@@ -78,7 +78,7 @@ if (process.env.NODE_ENV === 'development') {
 
 if (appConfig.mobileClient.server) {
     const corsOptions = {
-        origin: [`https://smartphone.${appConfig.domain}`],
+        origin: [ `https://smartphone.${appConfig.domain}` ],
         credentials: true
     };
     studioApp.options('*', cors(corsOptions));

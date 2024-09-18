@@ -23,7 +23,7 @@ export type Sample = {
 };
 
 export interface SampleDetails {
-    label: string;
+    label: string | undefined;
     length: number;
     path: string;
     hmacKey: string;

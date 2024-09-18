@@ -1,5 +1,5 @@
-import { ApiAuth, getAuth, getDeviceId, getLabel, getSampleLength, getStudioEndpoint, getCategory,
-    storeApiKeyAndImpulseId, storeCategory, storeDeviceId, storeLabel, storeSampleLength } from "./settings";
+import { ApiAuth, getAuth, getDeviceId, getStudioEndpoint,
+    storeApiKeyAndImpulseId, storeDeviceId } from "./settings";
 import { ISensor } from "./sensors/isensor";
 import { Uploader } from "./uploader";
 import { SampleDetails } from "./models";
@@ -49,9 +49,6 @@ export class TimeSeriesDataCollectionClientViews {
         console.log('init time-series-collection-views');
         storeDeviceId(getDeviceId());
 
-        storeLabel(getLabel());
-        storeSampleLength(getSampleLength());
-        storeCategory(getCategory());
         let sensorIcon: string;
         let activeSensor: ISensor;
         this._activeSensor = sensorType;
@@ -95,7 +92,12 @@ export class TimeSeriesDataCollectionClientViews {
         if (auth && auth.auth === 'apiKey') {
             storeApiKeyAndImpulseId(auth.apiKey, auth.impulseId);
 
-            window.history.replaceState(null, '', window.location.pathname);
+            const searchParams = new URLSearchParams(window.location.search);
+            searchParams.delete('apiKey');
+            searchParams.delete('studio');
+            searchParams.delete('env');
+            window.history.replaceState(null, '', window.location.pathname +
+                (searchParams.toString().length > 0) ? `?${searchParams.toString()}` : ``);
 
             try {
                 this.switchView(this._views.loading);
@@ -105,13 +107,38 @@ export class TimeSeriesDataCollectionClientViews {
                     this._hmacKey = devKeys.hmacKey;
                 }
 
-                this._elements.labelText.textContent = getLabel() || localStorage.getItem(`last-${this._activeSensor}-label`)
-                    || 'unknown';
-                this._elements.lengthText.textContent = !isNaN(getSampleLength()) ? getSampleLength().toString() :
-                    (localStorage.getItem(`last-${this._activeSensor}-length`) || '1');
-                this._elements.categoryText.textContent = getCategory() || localStorage.getItem(`last-${this._activeSensor}-category`)
-                    || 'split';
-                this._elements.categorySelect.value = this._elements.categoryText.textContent;
+                const lengthStr = searchParams.get('sampleLength') ??
+                    localStorage.getItem(`last-${this._activeSensor}-length`) ??
+                    '1';
+
+                const onStartState = {
+                    label: searchParams.get('label') ??
+                        localStorage.getItem(`last-${this._activeSensor}-label`) ??
+                        'unknown',
+                    length: !isNaN(Number(lengthStr)) ?
+                        Number(lengthStr) :
+                        1,
+                    category: searchParams.get('category') ??
+                        localStorage.getItem(`last-${this._activeSensor}-category`) ??
+                        'split'
+                };
+                if ([ 'training', 'testing', 'split' ].indexOf(onStartState.category) === -1) {
+                    onStartState.category = 'split';
+                }
+
+                console.log('onStartState', onStartState);
+
+                this._elements.labelText.dataset.label = onStartState.label;
+                this._elements.labelText.textContent = onStartState.label === '' ?
+                    'Unlabeled' :
+                    onStartState.label;
+                this._elements.lengthText.textContent = onStartState.length.toString();
+                this._elements.categoryText.textContent = onStartState.category;
+                this._elements.categorySelect.value = onStartState.category;
+
+                localStorage.setItem(`last-${this._activeSensor}-label`, onStartState.label);
+                localStorage.setItem(`last-${this._activeSensor}-length`, onStartState.length.toString());
+                localStorage.setItem(`last-${this._activeSensor}-category`, onStartState.category);
 
                 this._uploader = new Uploader(auth.apiKey);
 
@@ -210,7 +237,9 @@ export class TimeSeriesDataCollectionClientViews {
                 let details: SampleDetails = {
                     hmacKey: this._hmacKey,
                     interval: 0,
-                    label: this._elements.labelText.textContent || 'unknown',
+                    label: (this._elements.labelText.dataset.label || '') !== '' ?
+                        this._elements.labelText.dataset.label :
+                        undefined,
                     length: 0,
                     path: '/api/' + category + '/data',
                     sensor: activeSensor.getProperties().name
@@ -279,17 +308,25 @@ export class TimeSeriesDataCollectionClientViews {
 
         this._elements.labelLink.onclick = async (ev) => {
             ev.preventDefault();
-            let v = await Notify.prompt('Enter a label', '', 'Set label',
-                this._elements.labelText.textContent || '', 'info', 'info');
-            if (v) {
+            const v = await Notify.prompt(
+                'Enter a label',
+                '',
+                'Set label',
+                this._elements.labelText.dataset.label ?? this._elements.labelText.textContent ?? '',
+                'info',
+                'info');
+            if (v !== false) {
                 if (v && this._elements.labelText.textContent !== v) {
                     this._numCaptures = 0;
                     this._elements.capturedCount.textContent = '0s';
                 }
 
-                this._elements.labelText.textContent = v.toLowerCase();
+                this._elements.labelText.textContent = v ?
+                    v :
+                    'Unlabeled';
+                this._elements.labelText.dataset.label = v;
 
-                localStorage.setItem(`last-${this._activeSensor}-label`, this._elements.labelText.textContent);
+                localStorage.setItem(`last-${this._activeSensor}-label`, v);
             }
         };
 
@@ -317,7 +354,7 @@ export class TimeSeriesDataCollectionClientViews {
 
             this._elements.categoryText.textContent = this._elements.categorySelect.value;
 
-            localStorage.setItem(`last-${this._activeSensor}-category`, this._elements.categoryText.textContent);
+            localStorage.setItem(`last-${this._activeSensor}-category`, this._elements.categorySelect.value);
         };
 
         this._elements.categoryLink.onclick = ev => {
@@ -408,7 +445,7 @@ export class TimeSeriesDataCollectionClientViews {
         }
         let firstHashChar = hash[0];
 
-        if (['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b' ].indexOf(firstHashChar) > -1) {
+        if ([ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b' ].indexOf(firstHashChar) > -1) {
             return 'training';
         }
         else {

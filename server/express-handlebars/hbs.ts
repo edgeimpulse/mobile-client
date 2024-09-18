@@ -91,7 +91,7 @@ export class ExpressHandlebars {
 
     getPartials(options?: PartialTemplateOptions): Promise<{ }> {
         let partialsDirs = Array.isArray(this.partialsDir) ?
-        this.partialsDir : [this.partialsDir];
+        this.partialsDir : [ this.partialsDir ];
 
         let pd = partialsDirs.map((dir) => {
             let dirPath: any;
@@ -248,7 +248,7 @@ export class ExpressHandlebars {
             this.getPartials({ cache: options.cache }),
             Promise.resolve(options.partials),
         ]).then((p) => {
-            return utils.assign.apply(null, [{ }].concat(p));
+            return utils.assign.apply(null, [ { } ].concat(p));
         });
 
         // Pluck-out ExpressHandlebars-specific options and Handlebars-specific

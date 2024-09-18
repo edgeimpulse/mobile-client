@@ -312,7 +312,7 @@ export class DataCollectionKeywordClientViews {
         }
         let firstHashChar = hash[0];
 
-        if (['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b' ].indexOf(firstHashChar) > -1) {
+        if ([ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b' ].indexOf(firstHashChar) > -1) {
             return 'training';
         }
         else {

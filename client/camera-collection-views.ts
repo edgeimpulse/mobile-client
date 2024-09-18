@@ -58,7 +58,12 @@ export class CameraDataCollectionClientViews {
         if (auth && auth.auth === 'apiKey') {
             storeApiKeyAndImpulseId(auth.apiKey, auth.impulseId);
 
-            window.history.replaceState(null, '', window.location.pathname);
+            const searchParams = new URLSearchParams(window.location.search);
+            searchParams.delete('apiKey');
+            searchParams.delete('studio');
+            searchParams.delete('env');
+            window.history.replaceState(null, '', window.location.pathname +
+                (searchParams.toString().length > 0) ? `?${searchParams.toString()}` : ``);
 
             try {
                 this.switchView(this._views.loading);
@@ -68,9 +73,29 @@ export class CameraDataCollectionClientViews {
                     this._hmacKey = devKeys.hmacKey;
                 }
 
-                this._elements.labelText.textContent = localStorage.getItem('last-camera-label') || 'unknown';
-                this._elements.categoryText.textContent = localStorage.getItem('last-camera-category') || 'split';
-                this._elements.categorySelect.value = this._elements.categoryText.textContent;
+                const onStartState = {
+                    label: searchParams.get('label') ??
+                        localStorage.getItem(`last-camera-label`) ??
+                        'unknown',
+                    category: searchParams.get('category') ??
+                        localStorage.getItem(`last-camera-category`) ??
+                        'split'
+                };
+                if ([ 'training', 'testing', 'split' ].indexOf(onStartState.category) === -1) {
+                    onStartState.category = 'split';
+                }
+
+                console.log('onStartState', onStartState);
+
+                this._elements.labelText.dataset.label = onStartState.label;
+                this._elements.labelText.textContent = onStartState.label === '' ?
+                    'Unlabeled' :
+                    onStartState.label;
+                this._elements.categoryText.textContent = onStartState.category;
+                this._elements.categorySelect.value = onStartState.category;
+
+                localStorage.setItem(`last-camera-label`, onStartState.label);
+                localStorage.setItem(`last-camera-category`, onStartState.category);
 
                 this._uploader = new Uploader(auth.apiKey);
 
@@ -139,7 +164,9 @@ export class CameraDataCollectionClientViews {
                 let details: SampleDetails = {
                     hmacKey: this._hmacKey,
                     interval: 0,
-                    label: this._elements.labelText.textContent || 'unknown',
+                    label: (this._elements.labelText.dataset.label || '') !== '' ?
+                        this._elements.labelText.dataset.label :
+                        undefined,
                     length: 0,
                     path: '/api/' + category + '/data',
                     sensor: 'Camera'
@@ -200,16 +227,24 @@ export class CameraDataCollectionClientViews {
         this._elements.labelLink.onclick = async (ev) => {
             ev.preventDefault();
 
-            const v = await Notify.prompt('Enter a label', '', 'Set label',
-                this._elements.labelText.textContent || '', 'info', 'info');
-            if (v) {
+            const v = await Notify.prompt(
+                'Enter a label',
+                '',
+                'Set label',
+                this._elements.labelText.dataset.label ?? this._elements.labelText.textContent ?? '',
+                'info',
+                'info');
+            if (v !== false) {
                 if (v && this._elements.labelText.textContent !== v) {
                     this._elements.capturedCount.textContent = '0';
                 }
 
-                this._elements.labelText.textContent = v.toLowerCase();
+                this._elements.labelText.textContent = v ?
+                    v :
+                    'Unlabeled';
+                this._elements.labelText.dataset.label = v;
 
-                localStorage.setItem('last-camera-label', this._elements.labelText.textContent);
+                localStorage.setItem(`last-camera-label`, v);
             }
         };
 
@@ -318,7 +353,7 @@ export class CameraDataCollectionClientViews {
         }
         let firstHashChar = hash[0];
 
-        if (['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b' ].indexOf(firstHashChar) > -1) {
+        if ([ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b' ].indexOf(firstHashChar) > -1) {
             return 'training';
         }
         else {

@@ -51,7 +51,7 @@ export const createSignature = async (
             }
         },
         false, // export = false
-        ['sign', 'verify'] // what this key can do
+        [ 'sign', 'verify' ] // what this key can do
     );
     // Create signature for encoded input data
     const signature = await crypto.subtle.sign(

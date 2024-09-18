@@ -20,14 +20,14 @@ export function join(array: (string | HtmlSafeString)[], separator: string | Htm
         separator = ',';
     }
     if (array.length <= 0) {
-        return new HtmlSafeString([''], []);
+        return new HtmlSafeString([ '' ], []);
     }
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    return new HtmlSafeString(['', ...Array(array.length - 1).fill(separator), ''], array);
+    return new HtmlSafeString([ '', ...Array(array.length - 1).fill(separator), '' ], array);
 }
 
 export function safe(value: unknown) {
-    return new HtmlSafeString([String(value)], []);
+    return new HtmlSafeString([ String(value) ], []);
 }
 
 function escapehtml(unsafe: unknown): string {

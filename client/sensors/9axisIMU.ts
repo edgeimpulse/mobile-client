@@ -17,10 +17,6 @@ type PositionalSample = {
 export class Positional9DOFSensor implements ISensor {
     private _permissionGranted = false;
 
-    constructor() {
-        /* noop */
-    }
-
     /**
      * This function is flawed, even if DeviceMotionEvent exists, it's not
      * guaranteed that the device has a gyroscope. The only way to know is

@@ -1,5 +1,5 @@
 {
     "extends": "../../.eslintrc.json",
     "parser": "@typescript-eslint/parser",
-    "plugins": ["@stylistic/ts", "@typescript-eslint"]
+    "plugins": ["@stylistic", "@typescript-eslint"]
 }

@@ -32,7 +32,7 @@ export class Uploader {
         data.signature = await createSignature(details.hmacKey, data);
 
         let formData = new FormData();
-        formData.append("message", new Blob([ (JSON.stringify(data))],
+        formData.append("message", new Blob([ (JSON.stringify(data)) ],
             { type: "application/json"}), "message.json");
         if (sampleData.attachments && sampleData.attachments[0].value) {
             formData.append("image", sampleData.attachments[0].value, "image.jpg");
@@ -53,7 +53,14 @@ export class Uploader {
                 xml.onerror = () => reject(undefined);
                 xml.open("post", getIngestionApi() + details.path);
                 xml.setRequestHeader("x-api-key", this._apiKey);
-                xml.setRequestHeader("x-file-name", this.encodeLabel(details.label));
+                if (!details.label) {
+                    xml.setRequestHeader('x-no-date-id', '1');
+                    xml.setRequestHeader('x-no-label', '1');
+                    xml.setRequestHeader("x-file-name", 'sample' + Date.now());
+                }
+                else {
+                    xml.setRequestHeader("x-file-name", this.encodeLabel(details.label));
+                }
                 xml.send(formData);
             });
     }
