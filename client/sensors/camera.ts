@@ -114,16 +114,16 @@ export class CameraSensor implements ISensor {
                 resolve({
                     values: [ 'Ref-BINARY-image/jpeg (' + blob.size.toString() + ' bytes) xyz' ],
                     intervalMs: 0,
-                    sensors: [ {
+                    sensors: [{
                         name: "image",
                         units: "rgba"
-                    } ],
-                    attachments: [ {
+                    }],
+                    attachments: [{
                         value: blob,
                         options: {
                             contentType: 'image/jpeg'
                         }
-                    } ]
+                    }]
                 });
             };
 
@@ -148,10 +148,10 @@ export class CameraSensor implements ISensor {
                 resolve({
                     values: values,
                     intervalMs: 0,
-                    sensors: [ {
+                    sensors: [{
                         name: "image",
                         units: "rgba"
-                    } ]
+                    }]
                 });
             }
             else {

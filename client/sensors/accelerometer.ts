@@ -101,7 +101,7 @@ export class AccelerometerSensor implements ISensor {
                             resolve({
                                 values: sampleValues.slice(0, Math.floor(length / (1000 / frequency))),
                                 intervalMs: 1000 / frequency,
-                                sensors: [ {
+                                sensors: [{
                                     name: "accX",
                                     units: "m/s2"
                                 },

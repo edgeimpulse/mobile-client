@@ -132,7 +132,7 @@ export class MicrophoneSensor implements ISensor {
                     resolve({
                         values: eiData.slice(0, length * (frequency / 1000)),
                         intervalMs: 1000 / frequency,
-                        sensors: [ {
+                        sensors: [{
                             name: "audio",
                             units: "wav"
                         }
