@@ -1,18 +1,18 @@
-import express = require('express');
-import expressHbs = require('./express-handlebars/hbs');
-import Path = require('path');
-import http = require('http');
+import { join as pathJoin} from 'node:path';
+import { Server } from 'node:http';
+import { existsSync, readFileSync } from 'node:fs';
 import * as sentry from '@sentry/node';
-import { CSPMiddleware, NonceRequest } from './middleware/cspMiddleware';
+import express from 'express';
 import cors from 'cors';
-import fs from 'fs';
 import compression from 'compression';
+import expressHbs = require('./express-handlebars/hbs');
+import { CSPMiddleware, NonceRequest } from './middleware/cspMiddleware';
 import { Logger, appConfig } from '@ei/common';
 
 const log = new Logger("mobileclient");
 
-const revision = fs.existsSync(Path.join(process.cwd(), 'revision')) ?
-    fs.readFileSync(Path.join(process.cwd(), 'revision'), 'utf-8').trim()
+const revision = existsSync(pathJoin(process.cwd(), 'revision')) ?
+    readFileSync(pathJoin(process.cwd(), 'revision'), 'utf-8').trim()
     : undefined;
 
 const STATIC_ASSETS_MAX_AGE = revision && process.env.CDN_HOST ? '365d' : '0'; // 12 months
@@ -26,7 +26,7 @@ let STATIC_ASSETS_PREFIX = process.env.STATIC_ASSETS_PREFIX
 // Web server and socket routing
 const studioApp = express();
 if (process.env.SENTRY_DSN) {
-    studioApp.use(sentry.Handlers.requestHandler());
+    sentry.setupExpressErrorHandler(studioApp);
 }
 studioApp.use(new CSPMiddleware(STATIC_ASSETS_PREFIX).getMiddleware());
 studioApp.disable('x-powered-by');
@@ -64,12 +64,12 @@ if (!maxAgeObj && process.env.STATIC_ASSETS_MAX_AGE) {
 studioApp.use(compression());
 const hbs = new expressHbs.ExpressHandlebars({
     extname: '.html',
-    partialsDir: [ Path.join(process.cwd(), 'views', 'partials') ],
+    partialsDir: [ pathJoin(process.cwd(), 'views', 'partials') ],
 });
 
 studioApp.use(express.json());
 studioApp.set('view engine', 'html');
-studioApp.set('views', (Path.join(process.cwd(), 'views')));
+studioApp.set('views', (pathJoin(process.cwd(), 'views')));
 studioApp.engine('html', hbs.engine);
 studioApp.enable('view cache');
 if (process.env.NODE_ENV === 'development') {
@@ -167,19 +167,19 @@ studioApp.get('/microphone.html', (_req, res) => {
 
 if (process.env.STATIC_ASSETS_PREFIX) {
     const pathPrefix = (STATIC_ASSETS_PREFIX ? '/' + STATIC_ASSETS_PREFIX.replace(/^\/+|\/+$/g, '') : '');
-    studioApp.use(express.static(Path.join(process.cwd(), 'public'), undefined));
-    studioApp.use(pathPrefix, express.static(Path.join(process.cwd(), 'public'), maxAgeObj));
-    studioApp.use(pathPrefix + '/client', express.static(Path.join(process.cwd(), 'build', 'client'), maxAgeObj));
-    studioApp.use(pathPrefix + '/client', express.static(Path.join(process.cwd(), 'client'), maxAgeObj));
+    studioApp.use(express.static(pathJoin(process.cwd(), 'public'), undefined));
+    studioApp.use(pathPrefix, express.static(pathJoin(process.cwd(), 'public'), maxAgeObj));
+    studioApp.use(pathPrefix + '/client', express.static(pathJoin(process.cwd(), 'build', 'client'), maxAgeObj));
+    studioApp.use(pathPrefix + '/client', express.static(pathJoin(process.cwd(), 'client'), maxAgeObj));
 }
 else {
-    studioApp.use(express.static(Path.join(process.cwd(), 'public'), maxAgeObj));
-    studioApp.use('/client', express.static(Path.join(process.cwd(), 'build', 'client'), maxAgeObj));
-    studioApp.use('/client', express.static(Path.join(process.cwd(), 'client'), maxAgeObj));
+    studioApp.use(express.static(pathJoin(process.cwd(), 'public'), maxAgeObj));
+    studioApp.use('/client', express.static(pathJoin(process.cwd(), 'build', 'client'), maxAgeObj));
+    studioApp.use('/client', express.static(pathJoin(process.cwd(), 'client'), maxAgeObj));
 }
 
 if (process.env.SENTRY_DSN) {
-    studioApp.use(sentry.Handlers.errorHandler());
+    sentry.setupExpressErrorHandler(studioApp);
 }
 
 studioApp.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -198,7 +198,7 @@ studioApp.use((err: Error, req: express.Request, res: express.Response, next: ex
     res.status(500).header('Content-Type', 'text/plain').send(msg);
 });
 
-const studioServer = new http.Server(studioApp);
+const studioServer = new Server(studioApp);
 studioServer.listen(Number(process.env.PORT) || 4820, process.env.HOST || '0.0.0.0', async () => {
     const port = process.env.PORT || 4820;
     log.info(`Web server listening on port ${port}!`);

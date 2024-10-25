@@ -261,6 +261,14 @@
                 "selector": "MemberExpression[type=MemberExpression][object.type=MemberExpression][object.object.type=Identifier][object.object.name=process][object.property.type=Identifier][object.property.name=env][property.type=Identifier][property.name=K8S_ENVIRONMENT]",
                 "message": "K8S_ENVIRONMENT environment variable is not allowed. Please use appConfig instead."
             }
+        ],
+        "no-restricted-properties": [
+            "error",
+            {
+                "object": "url",
+                "property": "parse",
+                "message": "Url.parse is insecure and deprecated. Please use `new URL()` instead. https://nodejs.org/api/deprecations.html#DEP0169"
+            }
         ]
     }
 }
