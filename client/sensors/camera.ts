@@ -141,7 +141,6 @@ export class CameraSensor implements ISensor {
                     values.push(Number((imageData.data[ix * 4] << 16)
                         // eslint-disable-next-line no-bitwise
                         | (imageData.data[ix * 4 + 1] << 8)
-                        // eslint-disable-next-line no-bitwise
                         | (imageData.data[ix * 4 + 2])));
                 }
 

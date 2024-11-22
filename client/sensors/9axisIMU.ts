@@ -48,7 +48,6 @@ export class Positional9DOFSensor implements ISensor {
         if (!(await this.hasSensor())) {
             throw new Error('9DOF not present on this device');
         }
-        /* eslint-disable @typescript-eslint/no-explicit-any */
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (typeof (<any>DeviceMotionEvent).requestPermission !== 'function') {
             return true;

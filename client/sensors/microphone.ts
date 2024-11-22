@@ -16,7 +16,6 @@ declare class Recorder {
     recording: boolean;
     clear(): void;
     stop(): void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     exportWAV(fn: (blob: Blob) => any, mimeType: string | undefined, frequency: number): void;
 }
 
@@ -36,7 +35,7 @@ export class MicrophoneSensor implements ISensor {
     }
 
     async hasSensor() {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         return typeof window.AudioContext !== 'undefined' || typeof (<any>window).webkitAudioContext !== 'undefined';
     }
 

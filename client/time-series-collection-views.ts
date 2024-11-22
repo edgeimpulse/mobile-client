@@ -266,7 +266,6 @@ export class TimeSeriesDataCollectionClientViews {
                 // eslint-disable-next-line @typescript-eslint/no-floating-promises
                 (async () => {
                     if (!this._uploader) return;
-                    /* eslint-disable @typescript-eslint/no-explicit-any */
                     try {
                         let filename = await this._uploader.uploadSample(details, data, sample);
                         // eslint-disable-next-line

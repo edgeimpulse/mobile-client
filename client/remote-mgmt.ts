@@ -171,7 +171,6 @@ export class RemoteManagementConnection extends Emitter<{
         };
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     sendMessage = (data: any) => {
         this._socket.send(JSON.stringify(data));
     };

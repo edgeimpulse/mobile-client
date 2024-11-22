@@ -27,7 +27,6 @@ THE SOFTWARE.
 /**
  * Valid event listener args.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ValidArgs<T> = T extends any[] ? T : never;
 
 /**
@@ -54,6 +53,7 @@ export type EachEventListener<T> = (arg: EachValidArgs<T>) => void;
  */
 export class Emitter<T> {
     _: EachEventListener<T>[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     $: { [K in keyof T]?: EventListener<T, K>[] } = Object.create(null);
 
     on<K extends keyof T>(type: K, callback: EventListener<T, K>) {
@@ -62,6 +62,7 @@ export class Emitter<T> {
 
     off<K extends keyof T>(type: K, callback: EventListener<T, K>) {
         const stack = this.$[type];
+        // eslint-disable-next-line no-bitwise
         if (stack) stack.splice(stack.indexOf(callback) >>> 0, 1);
     }
 
@@ -70,6 +71,7 @@ export class Emitter<T> {
     }
 
     none(callback: EachEventListener<T>) {
+        // eslint-disable-next-line no-bitwise
         this._.splice(this._.indexOf(callback) >>> 0, 1);
     }
 

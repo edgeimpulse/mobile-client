@@ -26,5 +26,5 @@
         "../js-libs/wasm-feature-detect.js",
         "./**/*"
     ],
-    "exclude": ["build", "node_modules", "coverage"]
+    "exclude": ["build", "node_modules", "coverage", "./**/*.config.mjs"]
 }

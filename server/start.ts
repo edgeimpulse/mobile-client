@@ -5,9 +5,10 @@ import * as sentry from '@sentry/node';
 import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
+import { Logger, appConfig } from '@ei/common';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 import expressHbs = require('./express-handlebars/hbs');
 import { CSPMiddleware, NonceRequest } from './middleware/cspMiddleware';
-import { Logger, appConfig } from '@ei/common';
 
 const log = new Logger("mobileclient");
 

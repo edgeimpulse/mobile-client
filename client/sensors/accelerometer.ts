@@ -14,7 +14,6 @@ export class AccelerometerSensor implements ISensor {
             throw new Error('Accelerometer not present on this device');
         }
 
-        /* eslint-disable @typescript-eslint/no-explicit-any */
         if (typeof (DeviceMotionEvent as any).requestPermission !== 'function') {
             return Promise.resolve(true);
         }

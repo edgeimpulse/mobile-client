@@ -15,7 +15,7 @@ import { glob } from 'glob';
 import Handlebars from 'handlebars';
 import fs from 'fs';
 import path from 'path';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const utils = require('./utils');
 
 // -----------------------------------------------------------------------------
@@ -27,7 +27,7 @@ interface PartialTemplateOptions {
 
 interface RenderOptions {
     cache?: boolean;
-    data?: { };
+    data?: object;
     helpers?: any;
     partials?: any;
 }
@@ -89,7 +89,7 @@ export class ExpressHandlebars {
         });
     }
 
-    getPartials(options?: PartialTemplateOptions): Promise<{ }> {
+    getPartials(options?: PartialTemplateOptions): Promise<object> {
         let partialsDirs = Array.isArray(this.partialsDir) ?
         this.partialsDir : [ this.partialsDir ];
 
@@ -191,7 +191,7 @@ export class ExpressHandlebars {
         });
     }
 
-    render(filePath: string, context: { }, options?: RenderOptions): Promise<string> {
+    render(filePath: string, context: object, options?: RenderOptions): Promise<string> {
         if (!options) options = { };
 
         return Promise.all([

@@ -5,7 +5,6 @@ interface NotifyLibrary {
     notify: () => void;
 }
 declare let $: typeof jQuery & NotifyLibrary;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare let swal: any;
 
 export class Notify {

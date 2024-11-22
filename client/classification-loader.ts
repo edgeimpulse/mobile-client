@@ -342,7 +342,6 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
                     } | { success: false; error: string } = await jobStatus.json();
 
                     if (!status.success) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         throw new Error(status.error);
                     }
                     if (status.job.finished) {
@@ -365,7 +364,6 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
             ws.onmessage = (msg) => {
                 let data = <string>msg.data;
                 try {
-                    /* eslint-disable @typescript-eslint/no-explicit-any */
                     let m = <any[]>JSON.parse(data.replace(/^[0-9]+/, ''));
                     if (m[0] === 'job-data-' + jobId) {
                         this.emit('buildProgress', m[1].data);
@@ -394,10 +392,6 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
                 clearInterval(pingIv);
                 reject2('Websocket was closed');
             };
-
-            setTimeout(() => {
-                reject2('Building did not succeed within 5 minutes: ' + allData.join(''));
-            }, 300000);
         });
 
         p.then(() => {
