@@ -1,26 +1,48 @@
 export class FindSegments {
     /**
-     * Find segments in a data stream
+     * Find segments in a data stream. If you call this from the Studio (server-side),
+     * use StudioWorker.findSegments instead (processes this in a worker)
      *
      * @param data Data
      * @param samplesPerWindow Minimum distance between segments (number of datapoints)
      * @param frequency Data frequency
      * @param shiftSegments Whether to shift segments a little bit randomly, or center around the interesting window
      */
-    findSegments(data: number[] | number[][], samplesPerWindow: number, frequency: number,
-        shiftSegments: boolean) {
+    findSegments(
+        data: number[] | number[][],
+        samplesPerWindow: number,
+        frequency: number,
+        shiftSegments: boolean
+    ) {
+        // The input to the findSegmentsImpl function is number[] array. If you have multiple sensors
+        // then sum up the abs() values so you'll get a single numbers array. E.g.:
+        // [[1,2], [4, -2]] => [3, 6]
         let combinedData: number[];
         if (typeof data[0] === 'number') {
             combinedData = (<number[]>data);
         }
         else {
             combinedData = (<number[][]>data).map(v => v.reduce((curr, x) => curr + Math.abs(x), 0));
-            // combinedData = (<number[][]>data).map(v => Math.max(...v.map(vv => Math.abs(vv))));
         }
+
+        return FindSegments.findSegmentsImpl(combinedData, {
+            samplesPerWindow,
+            frequency,
+            shiftSegments,
+        });
+    }
+
+    static findSegmentsImpl(combinedData: number[], opts: {
+        samplesPerWindow: number,
+        frequency: number,
+        shiftSegments: boolean,
+    }) {
+
+        const { samplesPerWindow, frequency, shiftSegments } = opts;
 
         let minSegmentDistance = Math.ceil(samplesPerWindow * 0.85);
 
-        let indices = this.findPeaks(combinedData, minSegmentDistance);
+        let indices = FindSegments.findPeaks(combinedData, minSegmentDistance);
 
         // center each segment around data
         // find segment position with the most energy
@@ -48,7 +70,7 @@ export class FindSegments {
                 });
             }
 
-            let mean = this.avg(windows.map(w => w.energy)) * 1.2;
+            let mean = FindSegments.avg(windows.map(w => w.energy)) * 1.2;
             windows = windows.filter(x => x.energy > mean); // <-- all interesting windows
 
             if (windows.length === 0) return undefined;
@@ -166,7 +188,7 @@ export class FindSegments {
      * @param rmsThreshold RMS threshold for peaks (percentage of full data RMS)
      * @returns indices in the data list of the found peaks
      */
-    private findPeaks(data: number[], distance: number) {
+    static findPeaks(data: number[], distance: number) {
         // Calculate the RMS as the min peak height required
         // remove mean first...
 
@@ -234,7 +256,7 @@ export class FindSegments {
         return indices;
     }
 
-    private avg(signal: number[]): number {
+    static avg(signal: number[]): number {
         return signal.reduce((a, b) => a + b, 0) / signal.length;
     }
 }

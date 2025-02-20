@@ -54,7 +54,7 @@ export class CSPMiddleware {
         csp += `connect-src 'self' edgeimpulse.com *.edgeimpulse.com www.google-analytics.com *.hsforms.net *.hsforms.com *.amazonaws.com *.googleapis.com fonts.googleapis.com sentry.io *.sentry.io youtube.com *.youtube.com *.doubleclick.net localhost:${studioPort} localhost:${ingestionPort} localhost:${remoteMgmtPort} host.docker.internal:${studioPort} host.docker.internal:${ingestionPort} host.docker.internal:${remoteMgmtPort} data: ${wsProtocols}; `;
         csp += "style-src 'self' 'unsafe-inline' edgeimpulse.com *.edgeimpulse.com fonts.googleapis.com; ";
         csp += "base-uri 'self' edgeimpulse.com *.edgeimpulse.com; ";
-        csp += "frame-ancestors 'self' edgeimpulse.com *.edgeimpulse.com mltools.arduino.cc mltools.oniudra.cc skillbuilder.optra.com skillbuilder.optraportal.com; ";
+        csp += "frame-ancestors 'self' edgeimpulse.com *.edgeimpulse.com mltools.arduino.cc mltools.oniudra.cc; ";
         csp += "form-action 'self'; ";
         csp += `frame-src 'self' edgeimpulse.com *.edgeimpulse.com youtube.com *.youtube.com localhost:${remoteMgmtPort}; `;
         csp += "font-src 'self' edgeimpulse.com *.edgeimpulse.com fonts.gstatic.com; ";

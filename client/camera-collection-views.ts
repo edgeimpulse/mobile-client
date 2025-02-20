@@ -193,16 +193,17 @@ export class CameraDataCollectionClientViews {
                 // eslint-disable-next-line @typescript-eslint/no-floating-promises
                 (async () => {
                     if (!this._uploader) return;
-                    /* eslint-disable @typescript-eslint/no-unsafe-call*/
                     try {
                         let filename = await this._uploader.uploadSample(details, data, sample);
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                        // eslint-disable-next-line @stylistic/max-len
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
                         (<any>$).notifyClose();
                         Notify.notify('', 'Uploaded "' + filename + '" to ' + category + ' category', 'top', 'center',
                             'far fa-check-circle', 'success');
                     }
                     catch (ex) {
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                        // eslint-disable-next-line @stylistic/max-len
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
                         (<any>$).notifyClose();
                         Notify.notify('Failed to upload', getErrorMsg(ex), 'top', 'center',
                             'far fa-times-circle', 'danger');

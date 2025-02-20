@@ -4,21 +4,19 @@
   "description": "Mobile data acquisition and classification client for Edge Impulse",
   "private": true,
   "scripts": {
-    "start": "NODE_ENV=development ./node_modules/.bin/tsc-watch -b server --onSuccess \"node --trace-warnings  build/server/start.js\" --noClear & ./node_modules/.bin/tsc-watch -p client --noClear",
+    "start": "NODE_ENV=development npm run watch-server & npm run watch-client",
     "start-production": "node --trace-warnings  build/server/start.js",
-    "build": "./node_modules/.bin/tsc -p client && ./node_modules/.bin/tsc -b server",
-    "build-client": "./node_modules/.bin/tsc -p client",
-    "build-server": "./node_modules/.bin/tsc -b server",
-    "lint-server-fast": "oxlint --ignore-path ./.oxlintignore --symlinks --quiet -c ../.eslintrc.json --tsconfig ./server/tsconfig.json ./server/",
-    "eslint-server": "tsc -b ./server && (cd server && npx eslint  --quiet)",
-    "lint-server": "npm run lint-server-fast && npm run eslint-server",
-    "lint-client-fast": "oxlint --ignore-path ./.oxlintignore --symlinks --quiet -c ../.eslintrc.json --tsconfig ./client/tsconfig.json ./client/",
-    "eslint-client": "tsc -b ./client && (cd client && npx eslint --quiet)",
-    "lint-client": "npm run lint-client-fast && npm run eslint-client",
-    "fast-lint": "npm run lint-server-fast && npm run lint-client-fast",
+    "build": "tsc -p client && tsc -b server",
+    "build-client": "tsc -p client",
+    "build-server": "tsc -b server",
+    "eslint-server": "tsc -b ./server && (cd server && npx eslint  --cache --quiet)",
+    "lint-server": "npm run eslint-server",
+    "eslint-client": "tsc -b ./client && (cd client && npx eslint --cache --quiet)",
+    "lint-client": "npm run eslint-client",
     "lint": "npm run lint-server && npm run lint-client",
-    "watch": "./node_modules/.bin/tsc-watch -p client --noClear",
-    "postinstall": "cd ../common && npm ci"
+    "postinstall": "cd ../common && npm ci",
+    "watch-server": "node watch-server.js",
+    "watch-client": "node watch-client.js"
   },
   "repository": {
     "type": "git",
@@ -40,26 +38,24 @@
   "homepage": "https://github.com/brianweet/edge-impulse-example-browser-device#readme",
   "dependencies": {
     "@ei/common": "../common",
-    "@sentry/node": "8.33.1",
-    "compression": "1.7.4",
+    "@sentry/node": "8.55.0",
+    "compression": "1.7.5",
     "cors": "2.8.5",
-    "express": "4.21.1",
+    "express": "4.21.2",
     "glob": "10.4.3",
-    "handlebars": "4.7.8",
-    "signalfx-tracing": "0.13.0"
+    "handlebars": "4.7.8"
   },
   "devDependencies": {
-    "@types/compression": "1.0.1",
+    "@types/compression": "1.7.5",
     "@types/cors": "2.8.6",
     "@types/express": "4.17.21",
     "@types/glob": "8.1.0",
     "@types/jquery": "3.5.1",
     "@types/mocha": "10.0.6",
     "@types/node": "20.14.14",
-    "tsc-watch": "6.2.0",
+    "chokidar": "4.0.3",
+    "eslint": "9.19.0",
     "terser": "4.4.3",
-    "eslint": "9.15.0",
-    "oxlint": "0.12.0",
     "typescript": "4.9.5"
   }
 }
