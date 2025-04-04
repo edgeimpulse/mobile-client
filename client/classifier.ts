@@ -9,6 +9,22 @@ export enum EiSerialSensor {
 
 export type ClassifierPropertiesSensor = 'accelerometer' | 'microphone' | 'camera' | 'positional';
 
+export type ClassifierThresholds = ({
+    id: number,
+    type: 'anomaly_gmm',
+    min_anomaly_score: number,
+} | {
+    id: number,
+    type: 'object_detection',
+    min_score: number,
+} | {
+    id: number,
+    type: 'object_tracking',
+    keep_grace: number,
+    max_observations: number,
+    threshold: number,
+})[];
+
 export interface ClassifierProperties {
     sensor: ClassifierPropertiesSensor;
     frequency: number;
@@ -22,12 +38,14 @@ export interface ClassifierProperties {
     labelCount: number;
     modelType: 'classification' | 'object_detection' | 'constrained_object_detection';
     hasAnomaly: boolean;
+    hasObjectTracking: boolean;
     hasVisualAnomalyDetection: boolean;
     continuousMode: {
         sliceSize: number;
     } | undefined;
     isPerformanceCalibrationEnabled: boolean;
     classificationThreshold: number;
+    thresholds: ClassifierThresholds | undefined,
 }
 
 export type WasmRunClassifierResponse = {
@@ -56,6 +74,17 @@ export type WasmRunClassifierResponse = {
         y?: number;
         delete: () => void;
     };
+    object_tracking_size(): number;
+    object_tracking_get(index: number): {
+        object_id: number;
+        label: string;
+        value: number;
+        width: number;
+        height: number;
+        x: number;
+        y: number;
+        delete: () => void;
+    }
 };
 
 export interface WasmRuntimeModule {
@@ -70,6 +99,7 @@ export interface WasmRuntimeModule {
     get_properties(): {
         frequency: number;
         has_anomaly: boolean;
+        has_object_tracking: boolean | undefined;
         has_visual_anomaly_detection: boolean;
         input_features_count: number;
         image_input_width: number;
@@ -85,13 +115,24 @@ export interface WasmRuntimeModule {
         use_continuous_mode: boolean | undefined;
         is_performance_calibration_enabled: boolean | undefined;
         classification_threshold: number;
+        thresholds: ClassifierThresholds | undefined,
     };
     get_project(): {
         id: number;
         owner: string;
         name: string;
         deploy_version: number;
+        impulse_id: number | undefined;
+        impulse_name: string | undefined;
     };
+    set_threshold(opts: {
+        id: number,
+    } & { [ k: string ]: number | boolean }): {
+        success: true,
+    } | {
+        success: false,
+        error: string,
+    },
     _free(pointer: number): void;
     _malloc(bytes: number): number;
 }
@@ -103,6 +144,15 @@ export type ClassificationResponse = {
     has_visual_anomaly_detection: boolean;
     visual_ad_max?: number,
     visual_ad_mean?: number,
+    object_tracking_results?: {
+        object_id: number,
+        label: string,
+        value: number,
+        width: number,
+        height: number,
+        x: number,
+        y: number,
+    }[],
 };
 
 export class EdgeImpulseClassifier {
@@ -172,12 +222,22 @@ export class EdgeImpulseClassifier {
             isPerformanceCalibrationEnabled: ret.is_performance_calibration_enabled || false,
             classificationThreshold: typeof ret.classification_threshold === 'number'
                 ? ret.classification_threshold
-                : 0.8
+                : 0.8,
+            hasObjectTracking: ret.has_object_tracking || false,
+            thresholds: ret.thresholds,
         };
     }
 
     getProject() {
-        return this._module.get_project();
+        const project = this._module.get_project();
+        return {
+            id: project.id,
+            owner: project.owner,
+            name: project.name,
+            deploy_version: project.deploy_version,
+            impulse_id: project.impulse_id,
+            impulse_name: project.impulse_name,
+        };
     }
 
     classify(rawData: number[], debug = false): ClassificationResponse {
@@ -193,34 +253,7 @@ export class EdgeImpulseClassifier {
             throw new Error('Classification failed (err code: ' + ret.result + ')');
         }
 
-        let jsResult: ClassificationResponse = {
-            anomaly: ret.anomaly,
-            results: [],
-            visual_ad_grid_cells: [],
-            has_visual_anomaly_detection: this._props.hasVisualAnomalyDetection,
-        };
-
-        for (let cx = 0; cx < ret.size(); cx++) {
-            let c = ret.get(cx);
-            jsResult.results.push({ label: c.label, value: c.value, x: c.x, y: c.y, width: c.width, height: c.height });
-            c.delete();
-        }
-
-        if (this._props.hasVisualAnomalyDetection) {
-            jsResult.visual_ad_max = ret.visual_ad_max;
-            jsResult.visual_ad_mean = ret.visual_ad_mean;
-            jsResult.visual_ad_grid_cells = [];
-            for (let cx = 0; cx < ret.visual_ad_grid_cells_size(); cx++) {
-                let c = ret.visual_ad_grid_cells_get(cx);
-                jsResult.visual_ad_grid_cells.push({
-                    label: c.label, value: c.value, x: c.x, y: c.y, width: c.width, height: c.height });
-                c.delete();
-            }
-        }
-
-        ret.delete();
-
-        return jsResult;
+        return this._fillResultStruct(ret);
     }
 
     classifyContinuous(rawData: number[], debug = false, enablePerfCal = true): ClassificationResponse {
@@ -236,34 +269,18 @@ export class EdgeImpulseClassifier {
             throw new Error('Classification failed (err code: ' + ret.result + ')');
         }
 
-        const jsResult: ClassificationResponse = {
-            anomaly: ret.anomaly,
-            results: [],
-            visual_ad_grid_cells: [],
-            has_visual_anomaly_detection: this._props.hasVisualAnomalyDetection,
-        };
+        return this._fillResultStruct(ret);
+    }
 
-        for (let cx = 0; cx < ret.size(); cx++) {
-            let c = ret.get(cx);
-            jsResult.results.push({ label: c.label, value: c.value, x: c.x, y: c.y, width: c.width, height: c.height });
-            c.delete();
+    /**
+     * Override the threshold on a learn block (you can find thresholds via getProperties().thresholds)
+     * @param {*} obj, e.g. { id: 16, min_score: 0.2 } to set min. object detection threshold to 0.2 for block ID 16
+     */
+    setThreshold(obj: { id: number } & { [ k: string ]: number | boolean }) {
+        const ret = this._module.set_threshold(obj);
+        if (!ret.success) {
+            throw new Error(ret.error);
         }
-
-        if (this._props.hasVisualAnomalyDetection) {
-            jsResult.visual_ad_max = ret.visual_ad_max;
-            jsResult.visual_ad_mean = ret.visual_ad_mean;
-            jsResult.visual_ad_grid_cells = [];
-            for (let cx = 0; cx < ret.visual_ad_grid_cells_size(); cx++) {
-                let c = ret.visual_ad_grid_cells_get(cx);
-                jsResult.visual_ad_grid_cells.push({
-                    label: c.label, value: c.value, x: c.x, y: c.y, width: c.width, height: c.height });
-                c.delete();
-            }
-        }
-
-        ret.delete();
-
-        return jsResult;
     }
 
     private _arrayToHeap(data: number[]) {
@@ -273,5 +290,76 @@ export class EdgeImpulseClassifier {
         const heapBytes = new Uint8Array(this._module.HEAPU8.buffer, ptr, numBytes);
         heapBytes.set(new Uint8Array(typedArray.buffer));
         return { ptr: ptr, buffer: heapBytes };
+    }
+
+    private _fillResultStruct(ret: WasmRunClassifierResponse) {
+        if (!this._initialized || !this._props) throw new Error('Module is not initialized');
+
+        let jsResult: ClassificationResponse = {
+            anomaly: ret.anomaly,
+            results: [],
+            visual_ad_grid_cells: [],
+            has_visual_anomaly_detection: this._props.hasVisualAnomalyDetection,
+        };
+
+        for (let cx = 0; cx < ret.size(); cx++) {
+            let c = ret.get(cx);
+            if (this._props.modelType === 'object_detection' || this._props.modelType === 'constrained_object_detection') {
+                jsResult.results.push({
+                    label: c.label,
+                    value: c.value,
+                    x: c.x,
+                    y: c.y,
+                    width: c.width,
+                    height: c.height
+                });
+            }
+            else {
+                jsResult.results.push({
+                    label: c.label,
+                    value: c.value
+                });
+            }
+            c.delete();
+        }
+
+        if (this._props.hasObjectTracking) {
+            jsResult.object_tracking_results = [];
+            for (let cx = 0; cx < ret.object_tracking_size(); cx++) {
+                let c = ret.object_tracking_get(cx);
+                jsResult.object_tracking_results.push({
+                    object_id: c.object_id,
+                    label: c.label,
+                    value: c.value,
+                    x: c.x,
+                    y: c.y,
+                    width: c.width,
+                    height: c.height
+                });
+                c.delete();
+            }
+        }
+
+        if (this._props.hasVisualAnomalyDetection) {
+            jsResult.visual_ad_max = ret.visual_ad_max;
+            jsResult.visual_ad_mean = ret.visual_ad_mean;
+            jsResult.visual_ad_grid_cells = [];
+            for (let cx = 0; cx < ret.visual_ad_grid_cells_size(); cx++) {
+                let c = ret.visual_ad_grid_cells_get(cx);
+                jsResult.visual_ad_grid_cells.push({
+                    label: c.label,
+                    value: c.value,
+                    x: c.x,
+                    y: c.y,
+                    width: c.width,
+                    height: c.height
+                });
+                c.delete();
+            }
+        }
+
+        ret.delete();
+
+        return jsResult;
     }
 }

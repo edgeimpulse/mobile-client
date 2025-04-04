@@ -108,7 +108,7 @@ export const getCategory = () => {
         return categoryFromURL;
     }
     console.log('invalid category in URL', categoryFromURL);
-    return localStorage.getItem(LS_CATEGORY)|| '';
+    return localStorage.getItem(LS_CATEGORY) || '';
 };
 export const storeCategory = (category: string) => {
     console.log('storeSampleLength', category, window.location.search);

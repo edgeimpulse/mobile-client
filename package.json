@@ -9,11 +9,9 @@
     "build": "tsc -p client && tsc -b server",
     "build-client": "tsc -p client",
     "build-server": "tsc -b server",
-    "eslint-server": "tsc -b ./server && (cd server && npx eslint  --cache --quiet)",
-    "lint-server": "npm run eslint-server",
+    "eslint-server": "tsc -b ./server && (cd server && npx eslint --cache --quiet)",
     "eslint-client": "tsc -b ./client && (cd client && npx eslint --cache --quiet)",
-    "lint-client": "npm run eslint-client",
-    "lint": "npm run lint-server && npm run lint-client",
+    "lint": "npm run eslint-server && npm run eslint-client",
     "postinstall": "cd ../common && npm ci",
     "watch-server": "node watch-server.js",
     "watch-client": "node watch-client.js"

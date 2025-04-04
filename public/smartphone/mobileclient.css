@@ -530,11 +530,11 @@ video {
     color: white;
     color: white;
     padding: 0.2rem 0.6rem;
-    margin: -33px -3px 0 -3px;
     display: inline-block;
     position: absolute;
     font-size: 1rem;
-    right: 0;
+    right: -3px;
+    bottom: 100%;
 }
 
 /* end notify */
@@ -5838,4 +5838,10 @@ body.swal2-no-backdrop .swal2-shown.swal2-bottom-right {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+#thresholds-body {
+    min-width: 500px;
+    padding: 1rem;
+    margin-bottom: -1rem;
 }

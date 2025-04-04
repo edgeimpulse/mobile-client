@@ -5,7 +5,7 @@ import { MicrophoneSensor } from "./sensors/microphone";
 import { CameraSensor } from "./sensors/camera";
 import { Positional9DOFSensor } from "./sensors/9axisIMU";
 import { ClassificationLoader } from "./classification-loader";
-import { ClassificationResponse, ClassifierProperties, EdgeImpulseClassifier } from "./classifier";
+import { ClassificationResponse, ClassifierProperties, ClassifierThresholds, EdgeImpulseClassifier } from "./classifier";
 import { Notify } from "./notify";
 import { getErrorMsg } from "./utils";
 
@@ -40,7 +40,9 @@ export class ClassificationClientViews {
         cameraCanvas: document.querySelector('.capture-camera-inner canvas') as HTMLCanvasElement,
         timePerInferenceContainer: document.querySelector('#time-per-inference-container') as HTMLElement,
         timePerInference: document.querySelector('#time-per-inference') as HTMLElement,
-        shareHint: document.querySelector('#inferencing-public-project-hint') as HTMLElement
+        shareHint: document.querySelector('#inferencing-public-project-hint') as HTMLElement,
+        thresholdsCol: document.querySelector('#thresholds-col') as HTMLElement,
+        thresholdsBody: document.querySelector('#thresholds-body') as HTMLElement,
     };
 
     private _sensors: ISensor[] = [];
@@ -52,6 +54,7 @@ export class ClassificationClientViews {
         '#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabed4',
         '#469990', '#dcbeff', '#9A6324', '#fffac8', '#800000', '#aaffc3',
     ];
+    private _colorIx = 0;
     private _labelToColor: { [k: string]: string } = { };
 
     async init() {
@@ -218,6 +221,13 @@ export class ClassificationClientViews {
             (<{ [k: string]: HTMLElement }>this._views)[k].style.display = 'none';
         }
         view.style.display = '';
+
+        if (view === this._views.inferencing) {
+            this._elements.thresholdsCol.style.display = '';
+        }
+        else {
+            this._elements.thresholdsCol.style.display = 'none';
+        }
     }
 
     private grantPermission() {
@@ -253,6 +263,10 @@ export class ClassificationClientViews {
                 let sampleWindowLength = prop.inputFeaturesCount * (1000 / prop.frequency);
                 this._elements.inferencingTimeLeft.textContent = 'Waiting';
                 this._elements.inferencingMessage.textContent = 'Starting in 2 seconds...';
+
+                if (this._classifier) {
+                    this.bindThresholdSettings(this._classifier.getProperties().thresholds);
+                }
 
                 const sampleNextWindow = async () => {
                     if (!sensor || !this._classifier) return;
@@ -767,8 +781,7 @@ export class ClassificationClientViews {
                 };
 
                 if (!this._labelToColor[bb.label]) {
-                    this._labelToColor[bb.label] = this._colors[0];
-                    this._colors.splice(0, 1);
+                    this._labelToColor[bb.label] = this._colors[this._colorIx++ % this._colors.length];
                 }
 
                 let color = this._labelToColor[bb.label];
@@ -852,6 +865,159 @@ export class ClassificationClientViews {
             el.style.justifyContent = 'center';
 
             this._elements.cameraInner.appendChild(el);
+        }
+    }
+
+    private bindThresholdSettings(thresholds: ClassifierThresholds | undefined) {
+        this._elements.thresholdsBody.innerHTML = '';
+
+        let h3 = document.createElement('h3');
+        h3.textContent = 'Thresholds';
+        this._elements.thresholdsBody.appendChild(h3);
+
+        if (!thresholds) {
+            let msgEl = document.createElement('div');
+            let emEl = document.createElement('em');
+            emEl.classList.add('text-sm');
+            emEl.textContent = 'Model does not support setting thresholds. Re-build the eim file to change the thresholds.';
+            msgEl.appendChild(emEl);
+            this._elements.thresholdsBody.appendChild(msgEl);
+            return;
+        }
+
+        if (thresholds.length === 0) {
+            let msgEl = document.createElement('div');
+            let emEl = document.createElement('em');
+            emEl.classList.add('text-sm');
+            emEl.textContent = 'Model does not have any settable thresholds.';
+            msgEl.appendChild(emEl);
+            this._elements.thresholdsBody.appendChild(msgEl);
+            return;
+        }
+
+        let thresholdsDiv = document.createElement('div');
+        thresholdsDiv.classList.add('mb--3');
+
+        for (let thresholdStrongTyped of thresholds) {
+            const threshold = <{ id: number } & { [ k: string ]: number | boolean }><unknown>thresholdStrongTyped;
+
+            for (let k of Object.keys(threshold)) {
+                if (k === 'id' || k === 'type') continue;
+                if (typeof threshold[k] !== 'number' && typeof threshold[k] !== 'boolean') continue;
+
+                const LS_KEY = `threshold-${this._classifier?.getProject().id}-${threshold.id}-${k}`;
+
+                let rowEl = document.createElement('div');
+                rowEl.classList.add('mb-3');
+
+                let labelEl = document.createElement('label');
+                labelEl.classList.add('form-control-label', 'w-100');
+                labelEl.textContent = `${threshold.type}: ${k} (block ID: ${threshold.id})`;
+                rowEl.appendChild(labelEl);
+
+                const valueFromLs = localStorage.getItem(LS_KEY);
+
+                let inputEl = document.createElement('input');
+
+                if (typeof threshold[k] === 'number') {
+                    if (valueFromLs && !isNaN(Number(valueFromLs))) {
+                        threshold[k] = Number(valueFromLs);
+                        this.setThreshold({
+                            id: threshold.id,
+                            key: k,
+                            value: threshold[k],
+                        });
+                    }
+
+                    inputEl.classList.add('form-control', 'form-control-sm', 'text-default', 'font-monospace');
+                    let rounded = Math.round(<number>threshold[k] * 1000) / 1000;
+                    inputEl.value = rounded.toString();
+                    rowEl.appendChild(inputEl);
+                }
+                else if (typeof threshold[k] === 'boolean') {
+                    if (valueFromLs === 'true' || valueFromLs === 'false') {
+                        threshold[k] = valueFromLs === 'true';
+                        this.setThreshold({
+                            id: threshold.id,
+                            key: k,
+                            value: threshold[k],
+                        });
+                    }
+
+                    let cbWrapperEl = document.createElement('div');
+                    cbWrapperEl.classList.add('custom-control', 'custom-control-alternative', 'custom-checkbox');
+
+                    inputEl.classList.add('custom-control-input');
+                    inputEl.type = 'checkbox';
+                    inputEl.autocomplete = 'off';
+                    inputEl.checked = threshold[k] ? true : false;
+                    inputEl.id = `cb-${threshold.id}-${k}`;
+
+                    let cbLabelEl = document.createElement('label');
+                    cbLabelEl.classList.add('custom-control-label', 'pl-2');
+                    cbLabelEl.setAttribute('for', inputEl.id);
+                    cbLabelEl.textContent = '\xA0'; // &nbsp;
+
+                    cbWrapperEl.appendChild(inputEl);
+                    cbWrapperEl.appendChild(cbLabelEl);
+
+                    rowEl.appendChild(cbWrapperEl);
+                }
+
+
+                thresholdsDiv.appendChild(rowEl);
+
+                inputEl.oninput = () => {
+                    if (typeof threshold[k] === 'number') {
+                        if (!inputEl.value || isNaN(Number(inputEl.value))) return;
+
+                        if (k === 'min_score' && Number(inputEl.value) <= 0) return;
+
+                        threshold[k] = Number(inputEl.value);
+                    }
+                    else if (typeof threshold[k] === 'boolean') {
+                        threshold[k] = inputEl.checked;
+                    }
+
+                    this.setThreshold({
+                        id: threshold.id,
+                        key: k,
+                        value: threshold[k],
+                    });
+
+                    localStorage.setItem(LS_KEY, threshold[k].toString());
+                };
+            }
+        }
+
+        this._elements.thresholdsBody.appendChild(thresholdsDiv);
+
+        // prevent closing on click inside the dropdown menu
+        const dropdownMenuEl = this._elements.thresholdsCol.querySelector('.dropdown-menu');
+        if (dropdownMenuEl) {
+            dropdownMenuEl.addEventListener('click', ev => {
+                ev.stopPropagation();
+            });
+        }
+    }
+
+    private setThreshold(opts: {
+        id: number,
+        key: string,
+        value: number | boolean,
+    }) {
+        let obj: { id: number } & { [ k: string ]: number | boolean } = {
+            id: opts.id,
+        };
+        obj[opts.key] = opts.value;
+
+        try {
+            this._classifier?.setThreshold(obj);
+        }
+        catch (ex2) {
+            const ex = <Error>ex2;
+            Notify.notify('', `Failed to set threshold ${opts.key} on block ID ${opts.id}: ${ex.message || ex.toString()}`, 'top',
+                'center', 'far fa-times-circle', 'danger');
         }
     }
 }
