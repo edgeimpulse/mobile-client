@@ -29,5 +29,8 @@ export interface SampleDetails {
     hmacKey: string;
     interval: number;
     sensor: string;
+    labelColor?: string,
+    collectedSampleCount?: number,
+    targetSampleCount?: number,
     attachments?: { value: Blob | null; options: { contentType: string}}[];
 }

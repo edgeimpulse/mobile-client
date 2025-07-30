@@ -20,4 +20,5 @@ export interface ISensor {
     hasSensor(): Promise<boolean>;
     checkPermissions(fromClick: boolean): Promise<boolean>;
     takeSample(samplingOptions: ISamplingOptions): Promise<Sample>;
+    release?: () => void;
 }

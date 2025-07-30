@@ -54,7 +54,7 @@ export class CameraSensor implements ISensor {
     takeSample(samplingOptions: ISamplingOptions) {
         const video = document.querySelector('video');
         const canvas = document.querySelector('canvas');
-        const captureButton = document.querySelector('#capture-camera-button') as HTMLElement;
+        const captureButton = document.querySelector<HTMLButtonElement>('#capture-camera-button');
 
         if (!video || !canvas || !captureButton) {
             throw new Error('Element not found');
@@ -71,15 +71,15 @@ export class CameraSensor implements ISensor {
             captureButton.onclick = async () => {
                 if (this.isPaused()) return;
 
-                captureButton.classList.add('disabled');
+                captureButton.disabled = true;
 
                 this.takeSnapshot(samplingOptions).then(resolve).catch(reject);
             };
         }).then((v) => {
-            captureButton.classList.remove('disabled');
+            captureButton.disabled = false;
             return v;
         }).catch((err) => {
-            captureButton.classList.remove('disabled');
+            captureButton.disabled = false;
             throw err;
         });
     }
@@ -184,5 +184,14 @@ export class CameraSensor implements ISensor {
         }
 
         return video.paused;
+    }
+
+    // Dereference the getUserMedia promise when access to the camera sensor is no longer required
+    // This will remove the active recording privacy indicator in browser and OS UIs
+    release() {
+        if (this._stream) {
+            this._stream.getTracks().forEach(track => track.stop());
+            this._stream = undefined;
+        }
     }
 }

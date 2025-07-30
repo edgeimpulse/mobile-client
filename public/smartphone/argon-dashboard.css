@@ -3793,8 +3793,8 @@ input[type="button"].btn-block {
   margin-left: 0;
 }
 
-.btn-group>.btn:not(:last-child):not(.dropdown-toggle),
-.btn-group>.btn-group:not(:last-child)>.btn {
+.btn-group>.btn:not(:last-of-type),
+.btn-group>.btn-group:not(:last-of-type)>.btn {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
 }
@@ -7089,10 +7089,6 @@ button.bg-darker:focus {
   content: "";
 }
 
-.d-none {
-  display: none !important;
-}
-
 .d-inline {
   display: inline !important;
 }
@@ -7123,6 +7119,10 @@ button.bg-darker:focus {
 
 .d-inline-flex {
   display: inline-flex !important;
+}
+
+.d-none {
+  display: none !important;
 }
 
 @media (min-width: 576px) {

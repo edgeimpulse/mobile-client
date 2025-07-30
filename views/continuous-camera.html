@@ -1,0 +1,152 @@
+{{> header}}
+<body>
+    <div class="container-fluid">
+        <div class="row align-items-center border-bottom" id="header-row">
+            <div class="col-auto mt-3 mb-3 pr-0">
+                <img src="{{cdnPrefix}}/smartphone/mark.svg">
+            </div>
+            <div class="col align-middle">
+                <h1 class="text-dark mb-0 border-left pl-4">Data collection</h1>
+            </div>
+        </div>
+        <div class="row mt-4" id="loading-view">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-body text-center card-icon mt-4">
+                        <div class="sk-folding-cube">
+                            <div class="sk-cube1 sk-cube"></div>
+                            <div class="sk-cube2 sk-cube"></div>
+                            <div class="sk-cube4 sk-cube"></div>
+                            <div class="sk-cube3 sk-cube"></div>
+                        </div>
+                    </div>
+                    <div class="card-body text-center">
+                        <h2 id="loading-view-text">Loading...</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4" id="remote-mgmt-connected" style="display: none">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-body text-center mt-4">
+                        <div class="col text-center">
+                            <i class="far fa-check-circle text-success" style="font-size: 10rem"></i>
+                        </div>
+                    </div>
+                    <div class="card-body text-center pb-0">
+                        <h2>Connected as <span id="connected-device-id"></span></h2>
+                    </div>
+                    <div class="card-body text-center m-4">
+                        Follow the instructions in Edge Impulse Studio to begin collecting image samples on this device.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4" id="remote-mgmt-failed" style="display: none">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-body text-center mt-4">
+                        <div class="col text-center">
+                            <i class="far fa-times-circle text-warning" style="font-size: 10rem"></i>
+                        </div>
+                    </div>
+                    <div class="card-body text-center pb-0">
+                        <h2>Not connected</h2>
+                    </div>
+                    <div class="card-body text-center pt-2">
+                        Refresh this page to reconnect to Edge Impulse
+                    </div>
+                    <div class="card-body text-center pt-2 mb-2 text-sm text-gray" id="connection-failed-message">
+                        Failed to authenticate.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4" id="capture-camera" style="display: none; position: relative;">
+            <div class="col">
+                <div class="card shadow" style="position: relative;">
+
+                    <h4 id="sampling-label" class="sampling-label mt-4 mx-auto"></h4>        
+
+                    <div class="m-2 text-sm text-gray text-center" id="sampling-capture-qty-left"></div>
+        
+                    <div class="card-body text-center">
+                        <video playsinline autoplay></video>
+                        <canvas style="display: none;"></canvas>
+                    </div>
+                    <div class="card-body text-center mb-4 pt-0 pb-2">
+                        <button type="button" class="btn btn-lg pl-4 pr-4 btn-primary" id="capture-camera-button">
+                            <span id="capture-mode">
+                                <i class="fa fa-camera mr-2"></i>Capture
+                            </span>
+                            <span id="uploading-mode" class="d-none">
+                                <i class="fas fa-spinner spin-animation mr-2"></i>Uploading...
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4" id="completed-sample-collection" style="display: none;">
+            <div class="col">
+                <div class="card shadow" style="position: relative;">
+                    <div class="card-body text-sm text-center pt-0 pb-2">
+                        <h4 id="completed-sampling-label" class="sampling-label mt-4 mx-auto"></h4>
+                        <div class="text-gray m-2">
+                            <span id="collected-sample-count"></span>
+                            of
+                            <span id="target-sample-count"></span>
+                            collected
+                            <i class="fas fa-check-circle text-success"></i>
+                        </div>
+                        <div class="m-4">
+                            Nice work!
+                        </div>
+                        <div class="m-4">
+                            Next, <strong>return to the tutorial screen</strong> and follow the on-screen
+                            instructions to collect samples for the next class or move to
+                            the next tutorial step
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4" id="permission-view" style="display: none;">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-body text-center card-icon">
+                        <i class="fas fa-mobile text-light">
+                            <i class="fas fa-lock text-dark"></i>
+                        </i>
+                    </div>
+                    <div class="card-body text-center pb-0">
+                        <h2>Permission required</h2>
+                    </div>
+                    <div class="card-body text-center mb-4">
+                        <button type="button" class="btn btn-primary" id="grant-permissions-button">
+                            Give access to the camera
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="row">
+            <div class="col text-center">
+                <div class="copyright text-center text-muted">
+                    <i class="fas fa-code"></i>
+                    This client is <a href="https://github.com/edgeimpulse/mobile-client" class="font-weight-bold" target="_blank">open source</a>.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+{{> bottom}}

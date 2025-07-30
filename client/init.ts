@@ -5,6 +5,7 @@ import { getIngestionApi, storeIngestionApi, getRemoteManagementEndpoint,
 import { CameraDataCollectionClientViews } from "./camera-collection-views";
 import { DataCollectionKeywordClientViews } from "./collection-keyword";
 import { TimeSeriesDataCollectionClientViews } from "./time-series-collection-views";
+import { DataCollectionContinuousCameraClientViews } from "./continuous-camera-collection-views";
 
 declare global {
     interface Window {
@@ -13,7 +14,8 @@ declare global {
         | ClassificationClientViews
         | CameraDataCollectionClientViews
         | TimeSeriesDataCollectionClientViews
-        | DataCollectionKeywordClientViews;
+        | DataCollectionKeywordClientViews
+        | DataCollectionContinuousCameraClientViews;
     }
 }
 const mobileClientLoader = async (mode:
@@ -52,6 +54,11 @@ const mobileClientLoader = async (mode:
     }
     else if (mode === 'data-collection-keyword') {
         let client = new DataCollectionKeywordClientViews();
+        await client.init();
+        window.client = client;
+    }
+    else if (mode === 'data-collection-continuous-camera') {
+        let client = new DataCollectionContinuousCameraClientViews();
         await client.init();
         window.client = client;
     }

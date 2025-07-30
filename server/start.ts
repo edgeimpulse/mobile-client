@@ -156,6 +156,16 @@ studioApp.get('/keyword.html', (_req, res) => {
     }, getBaseView(req)));
 });
 
+studioApp.get('/continuous-camera.html', (_req, res) => {
+    const req = _req as NonceRequest;
+
+    res.render('continuous-camera.html', Object.assign({
+        pageTitle: 'Image collector - Edge Impulse',
+        clientInitTag: 'data-collection-continuous-camera',
+    }, getBaseView(req)));
+});
+
+
 studioApp.get('/microphone.html', (_req, res) => {
     const req = _req as NonceRequest;
 

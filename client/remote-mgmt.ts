@@ -20,10 +20,10 @@ interface RemoteManagementConnectionState {
 export class RemoteManagementConnection extends Emitter<{
     connected: [];
     error: [string];
-    samplingStarted: [number];
-    samplingUploading: [];
-    samplingFinished: [];
-    samplingProcessing: [];
+    samplingStarted: [SampleDetails];
+    samplingUploading: [SampleDetails];
+    samplingFinished: [SampleDetails];
+    samplingProcessing: [SampleDetails];
     samplingError: [string];
 }> {
     private _socket: WebSocket;
@@ -106,19 +106,19 @@ export class RemoteManagementConnection extends Emitter<{
                         ...msg
                     };
 
-                    this.emit('samplingStarted', msg.length);
+                    this.emit('samplingStarted', msg);
 
                     const sampleData = await sensor.takeSample({
                         length: msg.length,
                         frequency: 1000 / msg.interval,
                         processing: () => {
-                            this.emit('samplingProcessing');
+                            this.emit('samplingProcessing', msg);
                         }
                     });
 
                     // Upload sample
                     try {
-                        this.emit('samplingUploading');
+                        this.emit('samplingUploading', msg);
                         this.sendMessage(sampleUploading);
 
                         await this._uploader.uploadSample(
@@ -128,7 +128,7 @@ export class RemoteManagementConnection extends Emitter<{
                             );
 
                             this.sendMessage(sampleFinished);
-                            this.emit('samplingFinished');
+                            this.emit('samplingFinished', msg);
                         }
                         catch (ex) {
                             alert(getErrorMsg(ex));
@@ -139,7 +139,7 @@ export class RemoteManagementConnection extends Emitter<{
                         }
                     }
                     catch (ex) {
-                        this.emit('samplingFinished');
+                        this.emit('samplingFinished', msg);
                         this.emit('samplingError', getErrorMsg(ex));
                         this.sendMessage(
                             sampleRequestFailed(getErrorMsg(ex))

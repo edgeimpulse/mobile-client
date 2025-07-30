@@ -18,6 +18,7 @@ declare global {
     }
 }
 
+const SOCKETIO_EVENT_CODE = '42'; // 4: message, 2: event
 export class ClassificationLoader extends Emitter<{ status: [string]; buildProgress: [string | null] }> {
     private _studioHost: string;
     private _wsHost: string;
@@ -303,6 +304,8 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         let jobId = jobData.id;
         console.log('Created job with ID', jobId);
 
+        ws.send(SOCKETIO_EVENT_CODE + JSON.stringify([ 'start-log-stream', { jobId, lastReceivedTimestamp: 0 }]));
+
         let allData: string[] = [];
 
         let p = new Promise<void>((resolve2, reject2) => {
@@ -432,7 +435,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         }
 
         let ws = new WebSocket(this._wsHost + '/socket.io/?token=' +
-            tokenData.token.socketToken + '&EIO=3&transport=websocket');
+            tokenData.token.socketToken + '&EIO=3&transport=websocket&onDemandLogs=true');
 
         return new Promise((resolve, reject) => {
             ws.onopen = () => {

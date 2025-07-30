@@ -50,7 +50,7 @@
     "@types/glob": "8.1.0",
     "@types/jquery": "3.5.1",
     "@types/mocha": "10.0.6",
-    "@types/node": "20.14.14",
+    "@types/node": "22.15.21",
     "chokidar": "4.0.3",
     "eslint": "9.19.0",
     "terser": "4.4.3",

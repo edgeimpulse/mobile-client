@@ -472,6 +472,22 @@ video {
     text-transform: none;
 }
 
+.sampling-label[data-has-custom-color='1'] {
+    border-radius: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    display: inline-block;
+    background-color: hsl(from currentColor h s l / 0.1);
+}
+
+.sampling-label[data-has-custom-color='0'] {
+    text-transform: uppercase;
+    font-size: 10px;
+}
+
+.sampling-label[data-has-custom-color='0']::before {
+    content: 'Label: '
+}
+
 /* notify */
 .alert-notify {
     display: flex !important;

@@ -28,6 +28,7 @@ export class DataCollectionClientViews {
     };
 
     private _sensors: ISensor[] = [];
+    private _permissionTimeout: number | undefined;
 
     async init() {
         storeDeviceId(getDeviceId());
@@ -95,7 +96,7 @@ export class DataCollectionClientViews {
 
             let samplingInterval: number | undefined;
 
-            connection.on('samplingStarted', length => {
+            connection.on('samplingStarted', ({length}) => {
                 let remaining = length;
 
                 this._elements.samplingRecordingStatus.textContent = 'Recording data';
@@ -142,6 +143,7 @@ export class DataCollectionClientViews {
     }
 
     private async beforeSampling(sensorName: string): Promise<ISensor> {
+        clearTimeout(this._permissionTimeout);
         let sensor = this._sensors.find(s => s.getProperties().name === sensorName);
 
         if (!sensor) {
@@ -175,7 +177,7 @@ export class DataCollectionClientViews {
                 'Give access to the ' + sensor.getProperties().name;
 
             return new Promise<ISensor>((resolve, reject) => {
-                let permissionTimeout = setTimeout(() => {
+                this._permissionTimeout = setTimeout(() => {
                     reject('User did not grant permissions within one minute');
                 }, 60 * 1000);
 
@@ -204,7 +206,7 @@ export class DataCollectionClientViews {
                         }
                     }).catch(reject);
 
-                    clearInterval(permissionTimeout);
+                    clearTimeout(this._permissionTimeout);
                 };
             });
         }
