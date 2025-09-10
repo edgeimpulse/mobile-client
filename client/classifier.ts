@@ -147,7 +147,6 @@ export type ClassificationResponse = {
     object_tracking_results?: {
         object_id: number,
         label: string,
-        value: number,
         width: number,
         height: number,
         x: number,
@@ -330,7 +329,6 @@ export class EdgeImpulseClassifier {
                 jsResult.object_tracking_results.push({
                     object_id: c.object_id,
                     label: c.label,
-                    value: c.value,
                     x: c.x,
                     y: c.y,
                     width: c.width,

@@ -25,6 +25,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
     private _auth: ApiAuth;
     private _project: { id: number, owner: string, name: string, studioUrl: string } | undefined;
     private _impulseIdQs: string;
+    private _variant: 'float32' | 'int8' = 'float32';
 
     constructor(studioHostUrl: string, auth: ApiAuth) {
         super();
@@ -58,6 +59,20 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         else {
             deployType = 'wasm';
         }
+
+        const variants = await this.getModelVariants(projectId);
+        let variant = variants.modelVariants.find(x => x.isReferenceVariant);
+        if (!variant) {
+            if (variants.modelVariants.length > 0) {
+                variant = variants.modelVariants[0];
+            }
+            else {
+                throw new Error(`Could not find any model variants for this project: ` +
+                    JSON.stringify(variants));
+            }
+        }
+        this._variant = variant.variant;
+        console.log('Model variant is:', this._variant);
 
         let blob: Blob;
         this.emit('status', 'Downloading deployment...');
@@ -143,12 +158,12 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         return classifier;
     }
 
-    async getProject(): Promise < {
+    async getProject(): Promise<{
         id: number;
         owner: string;
         name: string;
         studioUrl: string;
-    } > {
+    }> {
         if (this._auth.auth === 'apiKey') {
             return new Promise((resolve, reject) => {
                 const x = new XMLHttpRequest();
@@ -205,7 +220,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         }
     }
 
-    async getDevelopmentKeys(projectId: number): Promise <{
+    async getDevelopmentKeys(projectId: number): Promise<{
         apiKey: string;
         hmacKey: string;
     }> {
@@ -237,10 +252,10 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         });
     }
 
-    private async downloadDeployment(projectId: number, deployType: 'wasm' | 'wasm-browser-simd'): Promise < Blob > {
+    private async downloadDeployment(projectId: number, deployType: 'wasm' | 'wasm-browser-simd'): Promise<Blob> {
         return new Promise((resolve, reject) => {
             const x = new XMLHttpRequest();
-            x.open('GET', `${this._studioHost}/${projectId}/deployment/download?type=${deployType}&modelType=float32&${this._impulseIdQs}`);
+            x.open('GET', `${this._studioHost}/${projectId}/deployment/download?type=${deployType}&modelType=${this._variant}&${this._impulseIdQs}`);
             x.onload = () => {
                 if (x.status !== 200) {
                     const reader = new FileReader();
@@ -289,7 +304,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
             },
             body: JSON.stringify({
                 engine: 'tflite',
-                modelType: 'float32'
+                modelType: this._variant,
             })
         });
         if (!jobRes.ok) {
@@ -496,7 +511,42 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         });
     }
 
-    private async blobToDataUrl(blob: Blob): Promise < string > {
+    private async getModelVariants(projectId: number): Promise<{
+        modelVariants: {
+            variant: 'float32' | 'int8',
+            isReferenceVariant: boolean,
+            isEnabled: boolean,
+            isSelected: boolean,
+        }[],
+    }> {
+        return new Promise((resolve, reject) => {
+            const x = new XMLHttpRequest();
+            x.open('GET', `${this._studioHost}/${projectId}/model-variants?${this._impulseIdQs}`);
+            x.onload = () => {
+                if (x.status !== 200) {
+                    reject('/model-variants returned: ' + x.status + ' - ' + JSON.stringify(x.response));
+                }
+                else {
+                    if (!x.response.success) {
+                        reject(x.response.error);
+                    }
+                    else {
+                        resolve({
+                            modelVariants: x.response.modelVariants,
+                        });
+                    }
+                }
+            };
+            x.onerror = err => reject(err);
+            x.responseType = 'json';
+            if (this._auth.auth === 'apiKey') {
+                x.setRequestHeader('x-api-key', this._auth.apiKey);
+            }
+            x.send();
+        });
+    }
+
+    private async blobToDataUrl(blob: Blob): Promise<string> {
         return new Promise((resolve, reject) => {
             const a = new FileReader();
             a.onload = e => resolve(((e.target && e.target.result) || '').toString());
@@ -505,7 +555,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         });
     }
 
-    private async blobToText(blob: Blob): Promise < string > {
+    private async blobToText(blob: Blob): Promise<string> {
         return new Promise(resolve => {
             const reader = new FileReader();
             reader.addEventListener('loadend', (e) => {

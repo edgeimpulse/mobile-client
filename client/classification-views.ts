@@ -513,7 +513,7 @@ export class ClassificationClientViews {
                 else {
                     let highest = res.results.find(x => x.value >= prop.classificationThreshold);
                     if (highest) {
-                        this._elements.inferencingMessage.textContent = highest.label;
+                        this._elements.inferencingMessage.textContent = `${highest.label} (${highest.value.toFixed(2)})`;
                     }
                     else {
                         if (prop.continuousMode) {
@@ -626,7 +626,7 @@ export class ClassificationClientViews {
                 else {
                     let highest = res.results.find(x => x.value >= prop.classificationThreshold);
                     if (highest) {
-                        this._elements.inferencingMessage.textContent = highest.label;
+                        this._elements.inferencingMessage.textContent = `${highest.label} (${highest.value.toFixed(2)})`;
                     }
                     else {
                         this._elements.inferencingMessage.textContent = 'uncertain';
@@ -662,12 +662,22 @@ export class ClassificationClientViews {
 
                 let thead = <HTMLElement>
                     this._elements.inferencingResultTable.querySelector('thead tr');
-                for (let e of res.results) {
+                if (this.showOnlyTopResults(res)) {
+                    // only 1 results th
                     let th = document.createElement('th');
                     th.scope = 'col';
-                    th.textContent = e.label;
+                    th.textContent = 'Top 5 results';
                     th.classList.add('px-0', 'text-center');
                     thead.appendChild(th);
+                }
+                else {
+                    for (let e of res.results) {
+                        let th = document.createElement('th');
+                        th.scope = 'col';
+                        th.textContent = e.label;
+                        th.classList.add('px-0', 'text-center');
+                        thead.appendChild(th);
+                    }
                 }
                 if (res.anomaly !== 0.0) {
                     let th = document.createElement('th');
@@ -712,18 +722,41 @@ export class ClassificationClientViews {
                 row.classList.remove('active');
             }, activeTimeout);
 
-            for (let e of res.results) {
+            // more than 10 classes?
+            if (this.showOnlyTopResults(res)) {
+                // only print top 5
                 let td = document.createElement('td');
-                td.textContent = e.value.toFixed(2);
-                td.classList.add('px-0', 'text-center');
-                if (Math.max(...res.results.map(v => v.value)) === e.value && res.visual_ad_grid_cells.length === 0) {
-                    td.classList.add('font-weight-bold');
-                }
-                else {
-                    td.classList.add('text-gray');
+
+                const top = res.results.sort((a, b) => b.value - a.value).slice(0, 5);
+                for (let ix = 0; ix < top.length; ix++) {
+                    let span = ix === 0 ? document.createElement('strong') : document.createElement('span');
+                    span.textContent = `${top[ix].label}: ${top[ix].value.toFixed(2)}`;
+                    td.appendChild(span);
+
+                    if (ix !== top.length - 1) {
+                        let commaSpan = document.createElement('span');
+                        commaSpan.textContent = ', ';
+                        td.appendChild(commaSpan);
+                    }
                 }
 
                 row.appendChild(td);
+            }
+            else {
+                for (let e of res.results) {
+                    let td = document.createElement('td');
+                    td.textContent = e.value.toFixed(2);
+                    td.classList.add('px-0', 'text-center');
+                    if (Math.max(...res.results.map(v => v.value)) === e.value &&
+                        res.visual_ad_grid_cells.length === 0) {
+                        td.classList.add('font-weight-bold');
+                    }
+                    else {
+                        td.classList.add('text-gray');
+                    }
+
+                    row.appendChild(td);
+                }
             }
 
             if (res.anomaly !== 0.0) {
@@ -764,7 +797,7 @@ export class ClassificationClientViews {
                     'fas fa-exclamation-triangle', 'success');
             }
 
-            for (let b of res.results) {
+            for (let b of res.object_tracking_results || res.results) {
                 if (typeof b.x !== 'number' ||
                     typeof b.y !== 'number' ||
                     typeof b.width !== 'number' ||
@@ -776,8 +809,10 @@ export class ClassificationClientViews {
                     y: b.y / heightFactor,
                     width: b.width / widthFactor,
                     height: b.height / heightFactor,
-                    label: b.label,
-                    value: b.value
+                    label: 'object_id' in b ?
+                        `${b.label} (ID ${b.object_id})` :
+                        b.label,
+                    value: 'value' in b ? b.value : undefined,
                 };
 
                 if (!this._labelToColor[bb.label]) {
@@ -813,7 +848,10 @@ export class ClassificationClientViews {
                 let label = document.createElement('div');
                 label.classList.add('bounding-box-label');
                 label.style.background = color;
-                label.textContent = bb.label + ' (' + bb.value.toFixed(2) + ')';
+                label.textContent = bb.label;
+                if (typeof bb.value === 'number') {
+                    label.textContent += ' (' + bb.value.toFixed(2) + ')';
+                }
                 if (prop.modelType === 'constrained_object_detection') {
                     el.style.whiteSpace = 'nowrap';
                 }
@@ -1019,5 +1057,12 @@ export class ClassificationClientViews {
             Notify.notify('', `Failed to set threshold ${opts.key} on block ID ${opts.id}: ${ex.message || ex.toString()}`, 'top',
                 'center', 'far fa-times-circle', 'danger');
         }
+    }
+
+    private showOnlyTopResults(res: {
+        results: object[],
+        visual_ad_grid_cells: object[],
+    }) {
+        return res.results.length > 10 && res.visual_ad_grid_cells.length === 0;
     }
 }

@@ -459,6 +459,11 @@ video {
     text-overflow: ellipsis;
 }
 
+#inferencing-in-progress th:first-child, #inferencing-in-progress td:first-child {
+    overflow: visible;
+    width: 80px;
+}
+
 #inferencing-in-progress tbody tr {
     background-color: white;
     transition: background-color ease-out 1.5s;
