@@ -482,6 +482,10 @@ export class ClassificationClientViews {
                     showNoObjectsFoundNotification: true
                 });
 
+                if (res.freeform) {
+                    this._elements.inferencingMessage.style.display = 'none';
+                }
+
                 // if we have 3 classes (unknown/noise/XXX) then we only show something
                 // when XXX is detected...
                 let resKeys = res.results.map(x => x.label);
@@ -524,13 +528,14 @@ export class ClassificationClientViews {
                         }
                     }
                 }
-
-                isClassifying = false;
             }
             catch (ex2) {
                 let ex = <Error>ex2;
                 this._elements.connectionFailedMessage.textContent = ex.message || ex.toString();
                 this.switchView(this._views.connectionFailed);
+            }
+            finally {
+                isClassifying = false;
             }
         };
 
@@ -613,9 +618,11 @@ export class ClassificationClientViews {
 
             this._elements.timePerInference.textContent = inferenceTimeMs.toString();
 
-            console.log('prop.modelType', prop.modelType);
+            if (res.freeform) {
+                this._elements.inferencingMessage.style.display = 'none';
+            }
 
-            if (prop.modelType === 'classification') {
+            if (prop.modelType === 'classification' && res.results) {
                 this._elements.inferenceRecordingMessageBody.style.display = '';
                 this._elements.inferenceRecordingMessageBody.classList.remove('pt-0');
                 this._elements.inferenceRecordingMessageBody.classList.add('pt-4');
@@ -653,11 +660,30 @@ export class ClassificationClientViews {
             }
         }
 
-        if (this._firstInference && res.results.length > 0) {
+        if (this._firstInference) {
             this._firstInference = false;
-            this._isObjectDetection = typeof res.results[0].x === 'number';
+            this._isObjectDetection = (prop.modelType === 'object_detection' || prop.modelType === 'constrained_object_detection') ?
+                true :
+                false;
 
-            if (!this._isObjectDetection) {
+            if (res.freeform) {
+                this._elements.inferencingResult.style.visibility = '';
+
+                let thead = <HTMLElement>
+                    this._elements.inferencingResultTable.querySelector('thead tr');
+                for (let ix = 0; ix < res.freeform.length; ix++) {
+                    let th = document.createElement('th');
+                    th.scope = 'col';
+                    th.textContent = `Tensor ${ix}`;
+                    th.classList.add('px-0', 'text-center');
+                    thead.appendChild(th);
+                }
+
+                if (thead.lastChild) {
+                    (<HTMLElement>thead.lastChild).classList.add('pr-4');
+                }
+            }
+            else if (!this._isObjectDetection && res.results.length > 0) {
                 this._elements.inferencingResult.style.visibility = '';
 
                 let thead = <HTMLElement>
@@ -694,8 +720,8 @@ export class ClassificationClientViews {
                     thead.appendChild(th);
                 }
 
-                if (thead.lastChild) {
-                    (<HTMLElement>thead.lastChild).classList.add('pr-4');
+                if (thead.lastChild instanceof HTMLElement) {
+                    thead.lastChild.classList.add('pr-4');
                 }
             }
         }
@@ -712,7 +738,7 @@ export class ClassificationClientViews {
         let widthFactor = Number(this._elements.cameraCanvas.width) /
             Number(this._elements.cameraVideo.clientWidth);
 
-        if (!this._isObjectDetection && res.results.length > 0) {
+        if (!this._isObjectDetection && ((res.results && res.results.length > 0) || res.freeform)) {
             let tbody = <HTMLElement>this._elements.inferencingResultTable.querySelector('tbody');
             let row = document.createElement('tr');
             row.innerHTML = '<td class="pl-4 pr-0">' + (++this._inferenceCount) + '</td>';
@@ -722,61 +748,71 @@ export class ClassificationClientViews {
                 row.classList.remove('active');
             }, activeTimeout);
 
-            // more than 10 classes?
-            if (this.showOnlyTopResults(res)) {
-                // only print top 5
-                let td = document.createElement('td');
+            if (res.freeform) {
+                for (let e of res.freeform) {
+                    let td = document.createElement('td');
+                    td.textContent = e.map(x => x.toFixed(4)).join(', ');
+                    td.classList.add('px-0', 'text-center', 'text-monospace');
+                    row.appendChild(td);
+                }
+            }
+            else if (res.results) {
+                // more than 10 classes?
+                if (this.showOnlyTopResults(res)) {
+                    // only print top 5
+                    let td = document.createElement('td');
 
-                const top = res.results.sort((a, b) => b.value - a.value).slice(0, 5);
-                for (let ix = 0; ix < top.length; ix++) {
-                    let span = ix === 0 ? document.createElement('strong') : document.createElement('span');
-                    span.textContent = `${top[ix].label}: ${top[ix].value.toFixed(2)}`;
-                    td.appendChild(span);
+                    const top = res.results.sort((a, b) => b.value - a.value).slice(0, 5);
+                    for (let ix = 0; ix < top.length; ix++) {
+                        let span = ix === 0 ? document.createElement('strong') : document.createElement('span');
+                        span.textContent = `${top[ix].label}: ${top[ix].value.toFixed(2)}`;
+                        td.appendChild(span);
 
-                    if (ix !== top.length - 1) {
-                        let commaSpan = document.createElement('span');
-                        commaSpan.textContent = ', ';
-                        td.appendChild(commaSpan);
+                        if (ix !== top.length - 1) {
+                            let commaSpan = document.createElement('span');
+                            commaSpan.textContent = ', ';
+                            td.appendChild(commaSpan);
+                        }
+                    }
+
+                    row.appendChild(td);
+                }
+                else {
+                    for (let e of res.results) {
+                        let td = document.createElement('td');
+                        td.textContent = e.value.toFixed(2);
+                        td.classList.add('px-0', 'text-center');
+                        if (Math.max(...res.results.map(v => v.value)) === e.value &&
+                            res.visual_ad_grid_cells.length === 0) {
+                            td.classList.add('font-weight-bold');
+                        }
+                        else {
+                            td.classList.add('text-gray');
+                        }
+
+                        row.appendChild(td);
                     }
                 }
 
-                row.appendChild(td);
-            }
-            else {
-                for (let e of res.results) {
+                if (res.anomaly !== 0.0) {
                     let td = document.createElement('td');
-                    td.textContent = e.value.toFixed(2);
+                    td.textContent = res.anomaly.toFixed(2);
                     td.classList.add('px-0', 'text-center');
-                    if (Math.max(...res.results.map(v => v.value)) === e.value &&
-                        res.visual_ad_grid_cells.length === 0) {
+                    row.appendChild(td);
+                }
+
+                if (res.has_visual_anomaly_detection) {
+                    let td = document.createElement('td');
+                    td.textContent = (res.visual_ad_max || 0).toFixed(2);
+                    td.classList.add('px-0', 'text-center');
+                    if (res.visual_ad_grid_cells.length > 0) {
                         td.classList.add('font-weight-bold');
                     }
                     else {
                         td.classList.add('text-gray');
                     }
-
                     row.appendChild(td);
                 }
-            }
-
-            if (res.anomaly !== 0.0) {
-                let td = document.createElement('td');
-                td.textContent = res.anomaly.toFixed(2);
-                td.classList.add('px-0', 'text-center');
-                row.appendChild(td);
-            }
-
-            if (res.has_visual_anomaly_detection) {
-                let td = document.createElement('td');
-                td.textContent = (res.visual_ad_max || 0).toFixed(2);
-                td.classList.add('px-0', 'text-center');
-                if (res.visual_ad_grid_cells.length > 0) {
-                    td.classList.add('font-weight-bold');
-                }
-                else {
-                    td.classList.add('text-gray');
-                }
-                row.appendChild(td);
             }
 
             if (row.lastChild) {
@@ -790,8 +826,8 @@ export class ClassificationClientViews {
                 tbody.insertBefore(row, tbody.firstChild);
             }
         }
-        else {
-            if (res.results.length === 0 && res.visual_ad_grid_cells.length === 0 &&
+        else if (this._isObjectDetection) {
+            if ((!res.results || res.results.length === 0) && res.visual_ad_grid_cells.length === 0 &&
                 opts.showNoObjectsFoundNotification) {
                 Notify.notify('', 'No objects found', 'top', 'center',
                     'fas fa-exclamation-triangle', 'success');

@@ -84,7 +84,14 @@ export type WasmRunClassifierResponse = {
         x: number;
         y: number;
         delete: () => void;
-    }
+    },
+    freeform: {
+        size(): number,
+        get(index: number): {
+            size(): number;
+            get(index: number): number;
+        }
+    } | undefined,
 };
 
 export interface WasmRuntimeModule {
@@ -92,7 +99,7 @@ export interface WasmRuntimeModule {
         buffer: Uint8Array;
     };
     onRuntimeInitialized: () => void;
-    init: () => void;
+    init: () => number | undefined;
     run_classifier(dataPointer: number, dataLength: number, debug: boolean): WasmRunClassifierResponse;
     run_classifier_continuous(
         dataPointer: number, dataLength: number, debug: boolean, enablePerfCal: boolean): WasmRunClassifierResponse;
@@ -152,28 +159,40 @@ export type ClassificationResponse = {
         x: number,
         y: number,
     }[],
+    freeform?: number[][],
 };
 
 export class EdgeImpulseClassifier {
     private _initialized = false;
+    private _initializationFailedCode: number | undefined;
     private _module: WasmRuntimeModule;
     private _props: ClassifierProperties | undefined;
 
     constructor(module: WasmRuntimeModule) {
         this._module = module;
         this._module.onRuntimeInitialized = () => {
-            this._module.init();
+            let ret = this._module.init();
+            if (typeof ret === 'number' && ret !== 0) {
+                this._initializationFailedCode = ret;
+                return;
+            }
             this._props = this.getProperties();
             this._initialized = true;
         };
     }
 
     init() {
+        if (this._initializationFailedCode) {
+            return Promise.reject('init() failed with code ' + this._initializationFailedCode);
+        }
         if (this._initialized === true) return Promise.resolve();
 
-        return new Promise<void>((resolve) => {
+        return new Promise<void>((resolve, reject) => {
             this._module.onRuntimeInitialized = () => {
-                this._module.init();
+                let ret = this._module.init();
+                if (typeof ret === 'number' && ret !== 0) {
+                    return reject('init() failed with code ' + ret);
+                }
                 this._props = this.getProperties();
                 this._initialized = true;
                 resolve();
@@ -301,6 +320,7 @@ export class EdgeImpulseClassifier {
             has_visual_anomaly_detection: this._props.hasVisualAnomalyDetection,
         };
 
+        jsResult.results = [];
         for (let cx = 0; cx < ret.size(); cx++) {
             let c = ret.get(cx);
             if (this._props.modelType === 'object_detection' || this._props.modelType === 'constrained_object_detection') {
@@ -353,6 +373,18 @@ export class EdgeImpulseClassifier {
                     height: c.height
                 });
                 c.delete();
+            }
+        }
+
+        if (ret.freeform) {
+            jsResult.freeform = [];
+            for (let ix = 0; ix < ret.freeform.size(); ix++) {
+                let arr = [];
+                const tensor = ret.freeform.get(ix);
+                for (let jx = 0; jx < tensor.size(); jx++) {
+                    arr.push(tensor.get(jx));
+                }
+                jsResult.freeform.push(arr);
             }
         }
 
