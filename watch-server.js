@@ -36,13 +36,18 @@ function runTscBuild() {
 }
 
 function runNode() {
-    // Kill any existing process
+    const startProcess = () => {
+        nodeProcess = spawn('node', command, { stdio: 'inherit' });
+    };
+
+    // Kill any existing process and wait for it to exit
     if (nodeProcess) {
+        nodeProcess.once('close', startProcess);
         nodeProcess.kill();
         nodeProcess = null;
+    } else {
+        startProcess();
     }
-
-    nodeProcess = spawn('node', command, { stdio: 'inherit' });
 }
 
 // Watch TS files
