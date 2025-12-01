@@ -27,12 +27,11 @@ export type ApiAuth = {
 };
 
 export function getAuth(): ApiAuth | undefined {
-    const apiKeyQs = new URLSearchParams(window.location.search).get('apiKey');
-    const projectIdQs = new URLSearchParams(window.location.search).get('publicProjectId');
-    const apiKeyLocalStorage = localStorage.getItem(LS_API_KEY);
+    const parsedUsp = new URLSearchParams(window.location.search);
 
-    const impulseIdStr = new URLSearchParams(window.location.search).get('impulseId') ||
-        localStorage.getItem(LS_IMPULSE_ID);
+    const apiKeyQs = parsedUsp.get('apiKey');
+    const projectIdQs = parsedUsp.get('publicProjectId');
+    const impulseIdStr = parsedUsp.get('impulseId');
     const impulseId = impulseIdStr ? Number(impulseIdStr) : undefined;
 
     // api key in qs? go ahead.
@@ -53,12 +52,17 @@ export function getAuth(): ApiAuth | undefined {
         };
     }
 
+    const apiKeyLocalStorage = localStorage.getItem(LS_API_KEY);
+    const impulseIdStrLocalStorage = localStorage.getItem(LS_IMPULSE_ID);
+
     // api key in local storage? use that (for refresh etc.)
     if (apiKeyLocalStorage) {
+        // Only use localStorage fallback for impulse ID when localStorage fallback for
+        // API key is also used. This ensures that API key and impulse ID are always in sync.
         return {
             auth: 'apiKey',
             apiKey: apiKeyLocalStorage,
-            impulseId: impulseId,
+            impulseId: impulseIdStrLocalStorage ? Number(impulseIdStrLocalStorage) : undefined,
         };
     }
 
