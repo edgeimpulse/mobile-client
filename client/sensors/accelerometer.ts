@@ -37,7 +37,7 @@ export class AccelerometerSensor implements ISensor {
                     return Promise.resolve(false);
                 }
                 else {
-                    throw err;
+                    throw (typeof err == 'string' ? new Error(err) : err);
                 }
             });
     }
