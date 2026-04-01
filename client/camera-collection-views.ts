@@ -7,6 +7,7 @@ import { ClassificationLoader } from "./classification-loader";
 import { dataMessage } from "./messages";
 import { Notify } from "./notify";
 import { getErrorMsg } from "./utils";
+import { FakeCameraSensor } from "./sensors/fake-camera";
 
 export class CameraDataCollectionClientViews {
     private _views = {
@@ -40,7 +41,18 @@ export class CameraDataCollectionClientViews {
     async init() {
         storeDeviceId(getDeviceId());
 
-        const camera = new CameraSensor();
+        const searchParams = new URLSearchParams(window.location.search);
+
+        let camera: FakeCameraSensor | CameraSensor;
+        if (searchParams.get('fakecamera')) {
+            camera = new FakeCameraSensor({
+                imageUrl: searchParams.get('fakecamera')!,
+            });
+        }
+        else {
+            camera = new CameraSensor();
+        }
+
         if (!await camera.hasSensor()) {
             this._elements.connectionFailedMessage.textContent = 'No camera detected';
             this.switchView(this._views.connectionFailed);
@@ -58,8 +70,8 @@ export class CameraDataCollectionClientViews {
         if (auth && auth.auth === 'apiKey') {
             storeApiKeyAndImpulseId(auth.apiKey, auth.impulseId);
 
-            const searchParams = new URLSearchParams(window.location.search);
             searchParams.delete('apiKey');
+            searchParams.delete('impulseId');
             searchParams.delete('studio');
             searchParams.delete('env');
             window.history.replaceState(null, '', window.location.pathname +
@@ -200,6 +212,9 @@ export class CameraDataCollectionClientViews {
                         (<any>$).notifyClose();
                         Notify.notify('', 'Uploaded "' + filename + '" to ' + category + ' category', 'top', 'center',
                             'far fa-check-circle', 'success');
+
+                        let curr = Number(this._elements.capturedCount.textContent || '0');
+                        this._elements.capturedCount.textContent = (curr + 1).toString();
                     }
                     catch (ex) {
                         // eslint-disable-next-line @stylistic/max-len
@@ -212,9 +227,6 @@ export class CameraDataCollectionClientViews {
 
                 // give some indication that the button was pressed
                 await this.sleep(100);
-
-                let curr = Number(this._elements.capturedCount.textContent || '0');
-                this._elements.capturedCount.textContent = (curr + 1).toString();
             }
             catch (ex) {
                 alert('Failed to upload: ' + getErrorMsg(ex));
@@ -314,18 +326,17 @@ export class CameraDataCollectionClientViews {
         return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
-    private async getDevelopmentApiKeys(auth: ApiAuth) {
+    private async getDevelopmentApiKeys(auth: ApiAuth): Promise<{ hmacKey: string | undefined }> {
         let l = new ClassificationLoader(getStudioEndpoint(), auth);
 
         let projectId = await l.getProject();
 
         try {
-            return await l.getDevelopmentKeys(projectId.id);
+            return await l.getDevelopmentHmacKey(projectId.id);
         }
         catch (ex) {
-            console.warn('Could not find development keys for project ' + projectId, ex);
+            console.warn('Could not get HMAC key for project ' + projectId.id, ex);
             return {
-                apiKey: undefined,
                 hmacKey: undefined
             };
         }

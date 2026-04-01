@@ -220,13 +220,18 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         }
     }
 
-    async getDevelopmentKeys(projectId: number): Promise<{
-        apiKey: string;
-        hmacKey: string;
+    /**
+     * Get development HMAC key, note that this THROWS if the request is unsuccessful, so handle
+     * that on the consuming side.
+     * @param projectId
+     * @returns
+     */
+    async getDevelopmentHmacKey(projectId: number): Promise<{
+        hmacKey: string | undefined;
     }> {
         return new Promise((resolve, reject) => {
             const x = new XMLHttpRequest();
-            x.open('GET', `${this._studioHost}/${projectId}/devkeys`);
+            x.open('GET', `${this._studioHost}/${projectId}/devkeys/hmac`);
             x.onload = () => {
                 if (x.status !== 200) {
                     reject('No development keys found: ' + x.status + ' - ' + JSON.stringify(x.response));
@@ -237,7 +242,6 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
                     }
                     else {
                         resolve({
-                            apiKey: x.response.apiKey,
                             hmacKey: x.response.hmacKey
                         });
                     }

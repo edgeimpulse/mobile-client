@@ -39,6 +39,10 @@ export const createSignature = async (
         signature: string;
     }
 ) => {
+    if (!('subtle' in crypto) || !('importKey' in crypto.subtle)) {
+        return Array.from({ length: 16 }).map(_ => '00').join('');
+    }
+
     // encoder to convert string to Uint8Array
     const enc = new TextEncoder();
     const key = await crypto.subtle.importKey(

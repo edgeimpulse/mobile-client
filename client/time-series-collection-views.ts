@@ -102,7 +102,7 @@ export class TimeSeriesDataCollectionClientViews {
             try {
                 this.switchView(this._views.loading);
 
-                let devKeys = await this.getDevelopmentApiKeys(auth);
+                let devKeys = await this.getDevelopmentHmacKey(auth);
                 if (devKeys.hmacKey) {
                     this._hmacKey = devKeys.hmacKey;
                 }
@@ -413,18 +413,17 @@ export class TimeSeriesDataCollectionClientViews {
         return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
-    private async getDevelopmentApiKeys(auth: ApiAuth) {
+    private async getDevelopmentHmacKey(auth: ApiAuth): Promise<{ hmacKey: string | undefined }> {
         const loader = new ClassificationLoader(getStudioEndpoint(), auth);
 
         let projectId = await loader.getProject();
 
         try {
-            return await loader.getDevelopmentKeys(projectId.id);
+            return await loader.getDevelopmentHmacKey(projectId.id);
         }
         catch (ex) {
-            console.warn('Could not find development keys for project ' + projectId, ex);
+            console.warn('Could not get HMAC key for project ' + projectId.id, ex);
             return {
-                apiKey: undefined,
                 hmacKey: undefined
             };
         }

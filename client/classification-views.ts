@@ -8,6 +8,7 @@ import { ClassificationLoader } from "./classification-loader";
 import { ClassificationResponse, ClassifierProperties, ClassifierThresholds, EdgeImpulseClassifier } from "./classifier";
 import { Notify } from "./notify";
 import { getErrorMsg } from "./utils";
+import { FakeCameraSensor } from "./sensors/fake-camera";
 
 export class ClassificationClientViews {
     private _views = {
@@ -60,6 +61,8 @@ export class ClassificationClientViews {
     async init() {
         storeDeviceId(getDeviceId());
 
+        const searchParams = new URLSearchParams(window.location.search);
+
         const accelerometer = new AccelerometerSensor();
         if (await accelerometer.hasSensor()) {
             console.log('has accelerometer');
@@ -72,7 +75,16 @@ export class ClassificationClientViews {
             this._sensors.push(microphone);
         }
 
-        const camera = new CameraSensor();
+        let camera: FakeCameraSensor | CameraSensor;
+        if (searchParams.get('fakecamera')) {
+            camera = new FakeCameraSensor({
+                imageUrl: searchParams.get('fakecamera')!,
+            });
+        }
+        else {
+            camera = new CameraSensor();
+        }
+
         if (await camera.hasSensor()) {
             console.log('has camera');
             this._sensors.push(camera);
@@ -111,8 +123,9 @@ export class ClassificationClientViews {
             if (auth.auth === 'apiKey') {
                 storeApiKeyAndImpulseId(auth.apiKey, auth.impulseId);
 
-                // don't rewrite state if auth via public project ID
-                window.history.replaceState(null, '', window.location.pathname);
+                searchParams.delete('apiKey');
+                searchParams.delete('studio');
+                searchParams.delete('env');
 
                 // no share hint
                 this._elements.shareHint.style.display = 'none';
@@ -128,6 +141,12 @@ export class ClassificationClientViews {
                 // switch-to-data-collection
                 this._elements.shareHint.style.display = '';
             }
+
+            searchParams.delete('ingestionApi');
+            searchParams.delete('remoteManagement');
+
+            window.history.replaceState(null, '', window.location.pathname +
+                (searchParams.toString().length > 0) ? `?${searchParams.toString()}` : ``);
 
             this._elements.loadingText.textContent = 'Loading classifier...';
 
