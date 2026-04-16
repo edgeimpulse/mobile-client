@@ -41,7 +41,7 @@
     "cors": "2.8.5",
     "express": "4.21.2",
     "glob": "10.4.3",
-    "handlebars": "4.7.8"
+    "handlebars": "4.7.9"
   },
   "devDependencies": {
     "@types/compression": "1.7.5",
