@@ -22,7 +22,7 @@ export class CSPMiddleware {
             res.set('X-Frame-Options', 'DENY');
             res.set('X-XSS-Protection', '1; mode=block');
             res.set('Referrer-Policy', 'strict-origin');
-            if (appConfig.csp) {
+            if (appConfig.csp.enabled) {
                 res.set('Strict-Transport-Security', 'max-age=63072000');
             }
 
@@ -44,7 +44,7 @@ export class CSPMiddleware {
 
         let csp = `default-src 'self' blob: edgeimpulse.com *.edgeimpulse.com; `;
         let wsProtocols = `wss: ws:`;
-        if (appConfig.domain && appConfig.csp) {
+        if (appConfig.domain && appConfig.csp.enabled) {
             wsProtocols = `wss://studio.${appConfig.domain} wss://remote-mgmt.${appConfig.domain}`;
         }
 

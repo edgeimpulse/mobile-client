@@ -1,16 +1,18 @@
 {
     "compilerOptions": {
         "incremental": true,
+        "tsBuildInfoFile": "../build/client/tsconfig.tsbuildinfo",
         "target": "es2019",
-        "module": "amd",
-        "moduleResolution": "node",
+        "module": "commonjs",
+        "moduleResolution": "bundler",
+        "rootDir": ".",
+        "outDir": "../build/client",
         "esModuleInterop": true,
-        "outFile": "../public/build/client/bundle.js",
         "strict": true,
         "sourceMap": true,
         "lib": [ "dom", "dom.iterable", "es2017" ],
-        "allowJs": true,
-        "types": [ ]
+        "types": [],
+        "skipLibCheck": true
     },
     "watchOptions": {
         "watchFile": "useFsEvents",
@@ -18,13 +20,12 @@
         "fallbackPolling": "dynamicPriority"
     },
     "include": [
-        "../js-libs/almond.js",
-        "../js-libs/cbor.js",
-        "../js-libs/ziplib/*.js",
-        "../js-libs/jquery.min.js",
-        "../js-libs/bootstrap-notify.js",
-        "../js-libs/wasm-feature-detect.js",
         "./**/*"
     ],
-    "exclude": ["build", "node_modules", "coverage", "./**/*.config.mjs"]
+    "exclude": [
+        "build",
+        "node_modules",
+        "coverage",
+        "./**/*.config.mjs"
+    ]
 }

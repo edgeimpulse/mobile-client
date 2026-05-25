@@ -18,10 +18,10 @@ function getTimeStr() {
     return new Date().toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true });
 }
 
-function runTscBuild() {
+function runTsgoBuild() {
     return new Promise((resolve, reject) => {
         isBuilding = true;
-        const tsc = spawn(Path.join(__dirname, './node_modules/.bin/tsc'), ['--build', 'server', '--incremental'], { stdio: 'inherit' });
+        const tsc = spawn(Path.join(__dirname, './node_modules/.bin/tsgo'), ['-p', 'server', '--incremental'], { stdio: 'inherit' });
         tsc.on('exit', (code) => {
             isBuilding = false;
 
@@ -54,7 +54,8 @@ function runNode() {
 chokidar.watch([
     'server/',
 ], {
-    ignoreInitial: true, ignored: 'build/**'
+    ignoreInitial: true,
+    ignored: 'build/**',
 }).on('change', async (path) => {
     if (!path.endsWith('.ts')) return;
 
@@ -66,7 +67,7 @@ chokidar.watch([
     console.log(``);
     console.log(`${getTimeStr()} - (server) File changed: ${path}. Rebuilding...`);
     try {
-        await runTscBuild();
+        await runTsgoBuild();
         console.log(``);
         console.log(`${getTimeStr()} - (server) \x1b[32mCompilation done, restarting server...\x1b[0m`);
         console.log(``);
@@ -81,7 +82,7 @@ chokidar.watch([
 (async () => {
     try {
         console.log(`${getTimeStr()} - (server) Starting incremental compilation...`);
-        await runTscBuild();
+        await runTsgoBuild();
         console.log(``);
         console.log(`${getTimeStr()} - (server) \x1b[32mCompilation done, starting server...\x1b[0m`);
         console.log(``);

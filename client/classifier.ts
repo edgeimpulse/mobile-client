@@ -305,8 +305,8 @@ export class EdgeImpulseClassifier {
         const typedArray = new Float32Array(data);
         const numBytes = typedArray.length * typedArray.BYTES_PER_ELEMENT;
         const ptr = this._module._malloc(numBytes);
-        const heapBytes = new Uint8Array(this._module.HEAPU8.buffer, ptr, numBytes);
-        heapBytes.set(new Uint8Array(typedArray.buffer));
+        const heapBytes = new Uint8Array(this._module.HEAPU8.buffer as unknown as ArrayBuffer, ptr, numBytes);
+        heapBytes.set(new Uint8Array(typedArray.buffer as unknown as ArrayBuffer));
         return { ptr: ptr, buffer: heapBytes };
     }
 

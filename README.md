@@ -34,6 +34,10 @@ To build:
 
 Go to the HTTPS URL that ngrok printed to see the client.
 
+## Bundling external JS dependencies
+
+We're bundling some external JS files into the client `bundle.js`. See [build-client-amd.js](./build-client-amd.js).
+
 ## Attribution
 
 The mobile client was built in conjunction with [Brian Weeteling](https://www.brianweet.com).

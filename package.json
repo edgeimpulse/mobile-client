@@ -6,13 +6,13 @@
   "scripts": {
     "start": "NODE_ENV=development npm run watch-server & npm run watch-client",
     "start-production": "node --trace-warnings  build/server/start.js",
-    "build": "tsc -p client && tsc -b server",
-    "build-client": "tsc -p client",
-    "build-server": "tsc -b server",
-    "eslint-server": "tsc -b ./server && (cd server && npx eslint --cache --quiet)",
-    "eslint-client": "tsc -b ./client && (cd client && npx eslint --cache --quiet)",
+    "build": "npm run build-client && npm run build-server",
+    "build-client": "./node_modules/.bin/tsgo -p client/tsconfig.json && node build-client-amd.js",
+    "build-server": "./node_modules/.bin/tsgo -p server",
+    "eslint-server": "./node_modules/.bin/tsgo -p ./server --noEmit && (cd server && npx eslint --cache --quiet)",
+    "eslint-client": "./node_modules/.bin/tsgo -p ./client/tsconfig.json --noEmit && (cd client && npx eslint --cache --quiet)",
     "lint": "npm run eslint-server && npm run eslint-client",
-    "postinstall": "cd ../common && npm ci",
+    "postinstall": "cd ../common && npm ci && npm run build",
     "watch-server": "node watch-server.js",
     "watch-client": "node watch-client.js"
   },
@@ -37,6 +37,7 @@
   "dependencies": {
     "@ei/common": "../common",
     "@sentry/node": "8.55.0",
+    "@typescript/native-preview": "7.0.0-dev.20260504.1",
     "compression": "1.7.5",
     "cors": "2.8.5",
     "express": "4.21.2",

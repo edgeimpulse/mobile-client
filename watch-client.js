@@ -11,13 +11,10 @@ function getTimeStr() {
     return new Date().toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true });
 }
 
-function runTscBuild() {
+function runProcess(command, args) {
     return new Promise((resolve, reject) => {
-        isBuilding = true;
-        const tsc = spawn(Path.join(__dirname, './node_modules/.bin/tsc'), ['--build', 'client', '--incremental'], { stdio: 'inherit' });
-        tsc.on('exit', (code) => {
-            isBuilding = false;
-
+        const child = spawn(command, args, { stdio: 'inherit' });
+        child.on('exit', (code) => {
             if (code === 0) {
                 resolve();
             }
@@ -28,23 +25,36 @@ function runTscBuild() {
     });
 }
 
+async function runClientBuild() {
+    isBuilding = true;
+    try {
+        await runProcess(Path.join(__dirname, './node_modules/.bin/tsgo'),
+            ['-p', 'client/tsconfig.json', '--incremental']);
+        await runProcess('node', [Path.join(__dirname, 'build-client-amd.js')]);
+    }
+    finally {
+        isBuilding = false;
+    }
+}
+
 // Watch TS files
 chokidar.watch([
     'client/',
+    'js-libs/',
+    'build-client-amd.js',
 ], {
-    ignoreInitial: true, ignored: 'build/**'
-}).on('change', async (path) => {
-    if (!path.endsWith('.ts')) return;
-
+    ignoreInitial: true,
+    ignored: 'build/**',
+}).on('all', async (event, path) => {
     if (isBuilding) {
         console.log(`${getTimeStr()} - (client) File changed: ${path}, but rebuild already in progress (ignoring)`);
         return;
     }
 
     console.log(``);
-    console.log(`${getTimeStr()} - (client) File changed: ${path}. Rebuilding client...`);
+    console.log(`${getTimeStr()} - (client) File ${event}: ${path}. Rebuilding client...`);
     try {
-        await runTscBuild();
+        await runClientBuild();
         console.log(``);
         console.log(`${getTimeStr()} - (client) \x1b[32mCompilation done\x1b[0m`);
     }
@@ -57,7 +67,7 @@ chokidar.watch([
 (async () => {
     try {
         console.log(`${getTimeStr()} - (client) Starting incremental compilation...`);
-        await runTscBuild();
+        await runClientBuild();
         console.log(``);
         console.log(`${getTimeStr()} - (client) \x1b[32mCompilation done\x1b[0m`);
     }
