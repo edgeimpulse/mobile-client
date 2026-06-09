@@ -22,8 +22,5 @@
     ],
     "exclude": [
         "**/*.config.mjs"
-    ],
-    "references": [
-        { "path": "../../common" }
     ]
 }

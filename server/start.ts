@@ -5,12 +5,9 @@ import * as sentry from '@sentry/node';
 import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
-import { Logger, appConfig } from '@ei/common';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 import expressHbs = require('./express-handlebars/hbs');
 import { CSPMiddleware, NonceRequest } from './middleware/cspMiddleware';
-
-const log = new Logger("mobileclient");
 
 const revision = existsSync(pathJoin(process.cwd(), 'revision')) ?
     readFileSync(pathJoin(process.cwd(), 'revision'), 'utf-8').trim()
@@ -77,9 +74,9 @@ if (process.env.NODE_ENV === 'development') {
     studioApp.disable('view cache');
 }
 
-if (appConfig.mobileClient.server) {
+if (process.env.DOMAIN) {
     const corsOptions = {
-        origin: [ `https://smartphone.${appConfig.domain}` ],
+        origin: [ `https://smartphone.${process.env.DOMAIN}` ],
         credentials: true
     };
     studioApp.options('*', cors(corsOptions));
@@ -212,7 +209,8 @@ studioApp.use((err: Error, req: express.Request, res: express.Response, next: ex
 const studioServer = new Server(studioApp);
 studioServer.listen(Number(process.env.PORT) || 4820, process.env.HOST || '0.0.0.0', async () => {
     const port = process.env.PORT || 4820;
-    log.info(`Web server listening on port ${port}!`);
+    // eslint-disable-next-line no-console
+    console.log(`Web server listening on port ${port}!`);
 });
 studioServer.keepAliveTimeout = 0;
 studioServer.headersTimeout = 0;

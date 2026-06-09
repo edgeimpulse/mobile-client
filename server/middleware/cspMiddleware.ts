@@ -1,7 +1,6 @@
 import express from 'express';
 import { asyncMiddleware } from './asyncMiddleware';
 import crypto from 'crypto';
-import { appConfig } from '@ei/common';
 
 export type NonceRequest = express.Request & { nonce: string };
 
@@ -22,9 +21,7 @@ export class CSPMiddleware {
             res.set('X-Frame-Options', 'DENY');
             res.set('X-XSS-Protection', '1; mode=block');
             res.set('Referrer-Policy', 'strict-origin');
-            if (appConfig.csp.enabled) {
-                res.set('Strict-Transport-Security', 'max-age=63072000');
-            }
+            res.set('Strict-Transport-Security', 'max-age=63072000');
 
             next();
         });
@@ -44,8 +41,8 @@ export class CSPMiddleware {
 
         let csp = `default-src 'self' blob: edgeimpulse.com *.edgeimpulse.com; `;
         let wsProtocols = `wss: ws:`;
-        if (appConfig.domain && appConfig.csp.enabled) {
-            wsProtocols = `wss://studio.${appConfig.domain} wss://remote-mgmt.${appConfig.domain}`;
+        if (process.env.DOMAIN) {
+            wsProtocols = `wss://studio.${process.env.DOMAIN} wss://remote-mgmt.${process.env.DOMAIN}`;
         }
 
         csp += `img-src 'self' 'unsafe-inline' edgeimpulse.com *.edgeimpulse.com www.google-analytics.com www.googletagmanager.com data: ${userCdnPrefix}; `;

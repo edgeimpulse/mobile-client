@@ -12,7 +12,6 @@
     "eslint-server": "./node_modules/.bin/tsgo -p ./server --noEmit && (cd server && npx eslint --cache --quiet)",
     "eslint-client": "./node_modules/.bin/tsgo -p ./client/tsconfig.json --noEmit && (cd client && npx eslint --cache --quiet)",
     "lint": "npm run eslint-server && npm run eslint-client",
-    "postinstall": "cd ../common && npm ci && npm run build",
     "watch-server": "node watch-server.js",
     "watch-client": "node watch-client.js"
   },
@@ -35,7 +34,6 @@
   },
   "homepage": "https://github.com/brianweet/edge-impulse-example-browser-device#readme",
   "dependencies": {
-    "@ei/common": "../common",
     "@sentry/node": "8.55.0",
     "@typescript/native-preview": "7.0.0-dev.20260504.1",
     "compression": "1.7.5",
