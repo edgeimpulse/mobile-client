@@ -36,7 +36,7 @@
   "dependencies": {
     "@sentry/node": "8.55.0",
     "@typescript/native-preview": "7.0.0-dev.20260504.1",
-    "compression": "1.7.5",
+    "compression": "1.8.1",
     "cors": "2.8.5",
     "express": "4.21.2",
     "glob": "10.4.3",
