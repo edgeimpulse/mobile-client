@@ -34,7 +34,7 @@
   },
   "homepage": "https://github.com/brianweet/edge-impulse-example-browser-device#readme",
   "dependencies": {
-    "@sentry/node": "8.55.0",
+    "@sentry/node": "10.58.0",
     "@typescript/native-preview": "7.0.0-dev.20260504.1",
     "compression": "1.7.5",
     "cors": "2.8.5",
