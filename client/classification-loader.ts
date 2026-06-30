@@ -19,7 +19,10 @@ declare global {
 }
 
 const SOCKETIO_EVENT_CODE = '42'; // 4: message, 2: event
-export class ClassificationLoader extends Emitter<{ status: [string]; buildProgress: [string | null] }> {
+export class ClassificationLoader extends Emitter<{
+    status: [string];
+    buildProgress: [string | null],
+}> {
     private _studioHost: string;
     private _wsHost: string;
     private _auth: ApiAuth;
@@ -75,25 +78,13 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         console.log('Model variant is:', this._variant);
 
         let blob: Blob;
+        this.emit('status', 'Fetching deployment...');
+
+        const { deploymentVersion } = await this.buildDeployment(projectId, deployType);
+
         this.emit('status', 'Downloading deployment...');
 
-        try {
-            blob = await this.downloadDeployment(projectId, deployType);
-        }
-        catch (ex) {
-            let m = getErrorMsg(ex);
-            if (m.indexOf('No deployment yet') === -1) {
-                throw ex;
-            }
-
-            this.emit('status', 'Building project...');
-
-            await this.buildDeployment(projectId, deployType);
-
-            this.emit('status', 'Downloading deployment...');
-
-            blob = await this.downloadDeployment(projectId, deployType);
-        }
+        blob = await this.downloadDeployment(projectId, deploymentVersion);
 
         console.log('blob', blob);
 
@@ -256,10 +247,11 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
         });
     }
 
-    private async downloadDeployment(projectId: number, deployType: 'wasm' | 'wasm-browser-simd'): Promise<Blob> {
+    private async downloadDeployment(projectId: number, deploymentVersion: number): Promise<Blob> {
         return new Promise((resolve, reject) => {
             const x = new XMLHttpRequest();
-            x.open('GET', `${this._studioHost}/${projectId}/deployment/download?type=${deployType}&modelType=${this._variant}&${this._impulseIdQs}`);
+
+            x.open('GET', `${this._studioHost}/${projectId}/deployment/history/${deploymentVersion}/download`);
             x.onload = () => {
                 if (x.status !== 200) {
                     const reader = new FileReader();
@@ -283,22 +275,49 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
 
     private async buildDeployment(projectId: number, deployType: 'wasm' | 'wasm-browser-simd') {
         if (this._auth.auth !== 'apiKey') {
-            throw new Error('Cannot build deployment if not authenticated via API key');
+            return this.buildPublicDeployment(projectId, deployType);
         }
 
-        let ws = await this.getWebsocket(projectId);
-
-        // select f32 models for all keras blocks
-        let impulseRes = await fetch(`${this._studioHost}/${projectId}/impulse?${this._impulseIdQs}`, {
-            method: 'GET',
+        const deploymentHistoryRes = await fetch(`${this._studioHost}/${projectId}/deployment/history` +
+                `?deploymentFormat=${encodeURIComponent(deployType)}&limit=100&offset=0&${this._impulseIdQs}`, {
+            method: "GET",
             headers: {
                 "x-api-key": this._auth.apiKey,
                 "Content-Type": "application/json"
-            }
+            },
         });
-        if (!impulseRes.ok) {
-            throw new Error('Failed to start deployment: ' + impulseRes.status + ' - ' + impulseRes.statusText);
+        if (!deploymentHistoryRes.ok) {
+            throw new Error('Failed to find deployment: ' + deploymentHistoryRes.status + ' - ' + deploymentHistoryRes.statusText);
         }
+
+        const deploymentHistoryData: {
+            success: true;
+            deployments: {
+                deploymentVersion: number,
+                deploymentFormat: string,
+                engine: string,
+                modelType: string,
+                impulseHasChangedSinceDeployment: boolean,
+            }[]
+        } | { success: false; error: string } = await deploymentHistoryRes.json();
+        if (!deploymentHistoryData.success) {
+            throw new Error(deploymentHistoryData.error);
+        }
+
+        const validDeployment = deploymentHistoryData.deployments.find(d => {
+            return d.deploymentFormat === deployType &&
+                d.impulseHasChangedSinceDeployment === false &&
+                d.modelType === this._variant &&
+                d.engine === 'tflite';
+        });
+
+        if (validDeployment) {
+            return { deploymentVersion: validDeployment.deploymentVersion };
+        }
+
+        this.emit('status', 'Building deployment...');
+
+        let ws = await this.getWebsocket(projectId);
 
         let jobRes = await fetch(`${this._studioHost}/${projectId}/jobs/build-ondevice-model?type=${deployType}&${this._impulseIdQs}`, {
             method: "POST",
@@ -315,7 +334,7 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
             throw new Error('Failed to start deployment: ' + jobRes.status + ' - ' + jobRes.statusText);
         }
 
-        let jobData: { success: true; id: number } | { success: false; error: string } = await jobRes.json();
+        let jobData: { success: true; id: number, deploymentVersion: number } | { success: false; error: string } = await jobRes.json();
         if (!jobData.success) {
             throw new Error(jobData.error);
         }
@@ -422,7 +441,104 @@ export class ClassificationLoader extends Emitter<{ status: [string]; buildProgr
             ws.close();
         });
 
-        return p;
+        await p;
+
+        return { deploymentVersion: jobData.deploymentVersion };
+    }
+
+    private async buildPublicDeployment(projectId: number, deployType: 'wasm' | 'wasm-browser-simd') {
+        this.emit('buildProgress', `Creating job...`);
+
+        let jobRes = await fetch(`${this._studioHost}/${projectId}/deployment/public/build?${this._impulseIdQs}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                deploymentType: deployType,
+                modelType: this._variant,
+            }),
+        });
+        if (!jobRes.ok) {
+            throw new Error('Failed to start deployment: ' + jobRes.status + ' - ' + jobRes.statusText);
+        }
+
+        let jobData: { success: true; deploymentVersion: number, jobId: number | undefined } |
+            { success: false; error: string } = await jobRes.json();
+        if (!jobData.success) {
+            throw new Error(jobData.error);
+        }
+
+        if (jobData.jobId) {
+            this.emit('status', `Building deployment...`);
+            this.emit('buildProgress', `Creating job... OK (ID: ${jobData.jobId})`);
+
+            // a job was started... attach to it (not over websocket, but poll)
+            let lastLogEventProcessed = new Date(0);
+            let lastLogLine: string | undefined;
+
+            while (1) {
+                let jobStatus = await fetch(`${this._studioHost}/${projectId}/deployment/public/jobs/${jobData.jobId}/status`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+                if (!jobStatus.ok) {
+                    throw new Error('Failed to start deployment: ' + jobStatus.status + ' - ' +
+                        jobStatus.statusText);
+                }
+
+                let status: {
+                    success: true;
+                    id: number;
+                    job: {
+                        created: string;
+                        started?: string;
+                        finished?: string;
+                        finishedSuccessful?: boolean;
+                    };
+                    logs: {
+                        created: string,
+                        data: string,
+                    }[];
+                } | { success: false; error: string } = await jobStatus.json();
+
+                console.log('jobStatus', jobStatus);
+
+                // req failed
+                if (!status.success) {
+                    throw new Error(status.error);
+                }
+
+                // process logs...
+                const newLogs = status.logs.filter(log => {
+                    return +new Date(log.created) > +lastLogEventProcessed &&
+                        log.data.trim() !== '';
+                });
+                if (newLogs.length > 0) {
+                    for (const log of structuredClone(newLogs).reverse()) { // old->new
+                        this.emit('buildProgress', log.data);
+                        lastLogLine = log.data;
+                    }
+                    lastLogEventProcessed = new Date(Math.max(...newLogs.map(log => +new Date(log.created))) + 1);
+                }
+
+                // job finished
+                if (status.job.finished) {
+                    if (status.job.finishedSuccessful) {
+                        break;
+                    }
+                    else {
+                        throw new Error(`Failed to build binary` + (lastLogLine ? `: ${lastLogLine}` : ``));
+                    }
+                }
+
+                await new Promise<void>(resolve => setTimeout(resolve, 3000));
+            }
+        }
+
+        return { deploymentVersion: jobData.deploymentVersion };
     }
 
     private async getWebsocket(projectId: number): Promise<WebSocket> {
