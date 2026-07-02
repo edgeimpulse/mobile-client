@@ -334,7 +334,8 @@ export class ClassificationLoader extends Emitter<{
             throw new Error('Failed to start deployment: ' + jobRes.status + ' - ' + jobRes.statusText);
         }
 
-        let jobData: { success: true; id: number, deploymentVersion: number } | { success: false; error: string } = await jobRes.json();
+        let jobData: { success: true; id: number, deploymentVersion: number } |
+            { success: false; error: string } = await jobRes.json();
         if (!jobData.success) {
             throw new Error(jobData.error);
         }
