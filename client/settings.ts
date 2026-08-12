@@ -162,6 +162,9 @@ export const getIngestionApi = () => {
         if (window.location.host === 'smartphone.acc2.edgeimpulse.com') {
             return INGESTION_API.replace('edgeimpulse.com', 'acc2.edgeimpulse.com');
         }
+        else if (window.location.host === 'smartphone.dev.edgeimpulse.com') {
+            return INGESTION_API.replace('edgeimpulse.com', 'dev.edgeimpulse.com');
+        }
         else {
             return INGESTION_API;
         }
@@ -191,6 +194,9 @@ export const getRemoteManagementEndpoint = () => {
         if (window.location.host === 'smartphone.acc2.edgeimpulse.com') {
             return REMOTE_MANAGEMENT_ENDPOINT.replace('edgeimpulse.com', 'acc2.edgeimpulse.com');
         }
+        else if (window.location.host === 'smartphone.dev.edgeimpulse.com') {
+            return REMOTE_MANAGEMENT_ENDPOINT.replace('edgeimpulse.com', 'dev.edgeimpulse.com');
+        }
         else {
             return REMOTE_MANAGEMENT_ENDPOINT;
         }
@@ -218,6 +224,9 @@ export const getStudioEndpoint = () => {
     else {
         if (window.location.host === 'smartphone.acc2.edgeimpulse.com') {
             return STUDIO_ENDPOINT.replace('edgeimpulse.com', 'acc2.edgeimpulse.com');
+        }
+        else if (window.location.host === 'smartphone.dev.edgeimpulse.com') {
+            return STUDIO_ENDPOINT.replace('edgeimpulse.com', 'dev.edgeimpulse.com');
         }
         else {
             return STUDIO_ENDPOINT;
