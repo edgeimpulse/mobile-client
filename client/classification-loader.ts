@@ -317,8 +317,6 @@ export class ClassificationLoader extends Emitter<{
 
         this.emit('status', 'Building deployment...');
 
-        let ws = await this.getWebsocket(projectId);
-
         let jobRes = await fetch(`${this._studioHost}/${projectId}/jobs/build-ondevice-model?type=${deployType}&${this._impulseIdQs}`, {
             method: "POST",
             headers: {
@@ -343,108 +341,147 @@ export class ClassificationLoader extends Emitter<{
         let jobId = jobData.id;
         console.log('Created job with ID', jobId);
 
-        ws.send(SOCKETIO_EVENT_CODE + JSON.stringify([ 'start-log-stream', { jobId, lastReceivedTimestamp: 0 }]));
+        let jobFinished = false;
+        let websocketPingIv: number | undefined;
+        let lastWs: WebSocket | undefined;
+        let lastReceivedTimestamp = 0;
 
-        let allData: string[] = [];
+        try {
+            let p = new Promise<void>(async (resolve, reject) => {
+                let allData: string[] = [];
 
-        let p = new Promise<void>((resolve2, reject2) => {
-            let pingIv = setInterval(() => {
-                ws.send('2');
-            }, 25000);
-
-            let checkJobStatusIv = setInterval(async () => {
-                try {
-                    if (this._auth.auth !== 'apiKey') {
-                        throw new Error('Cannot build deployment if not authenticated via API key');
-                    }
-
-                    let jobStatus = await fetch(`${this._studioHost}/${projectId}/jobs/${jobId}/status`, {
-                        method: "GET",
-                        headers: {
-                            "x-api-key": this._auth.apiKey,
-                            "Content-Type": "application/json"
+                let checkJobStatusIv = setInterval(async () => {
+                    try {
+                        if (this._auth.auth !== 'apiKey') {
+                            throw new Error('Cannot build deployment if not authenticated via API key');
                         }
-                    });
-                    if (!jobStatus.ok) {
-                        throw new Error('Failed to start deployment: ' + jobStatus.status + ' - ' +
-                            jobStatus.statusText);
-                    }
 
-                    let status: {
-                        success: true;
-                        id: number;
-                        job: {
+                        let jobStatus = await fetch(`${this._studioHost}/${projectId}/jobs/${jobId}/status`, {
+                            method: "GET",
+                            headers: {
+                                "x-api-key": this._auth.apiKey,
+                                "Content-Type": "application/json"
+                            }
+                        });
+                        if (!jobStatus.ok) {
+                            throw new Error('Failed to start deployment: ' + jobStatus.status + ' - ' +
+                                jobStatus.statusText);
+                        }
+
+                        let status: {
+                            success: true;
                             id: number;
-                            key: string;
-                            created?: Date;
-                            started?: Date;
-                            finished?: Date;
-                            finishedSuccessful?: boolean;
-                        };
-                    } | { success: false; error: string } = await jobStatus.json();
+                            job: {
+                                id: number;
+                                key: string;
+                                created?: Date;
+                                started?: Date;
+                                finished?: Date;
+                                finishedSuccessful?: boolean;
+                            };
+                        } | { success: false; error: string } = await jobStatus.json();
 
-                    if (!status.success) {
-                        throw new Error(status.error);
-                    }
-                    if (status.job.finished) {
-                        if (status.job.finishedSuccessful) {
-                            clearInterval(checkJobStatusIv);
-                            resolve2();
+                        if (!status.success) {
+                            throw new Error(status.error);
                         }
-                        else {
-                            clearInterval(checkJobStatusIv);
-                            reject2('Failed to build binary');
+                        if (status.job.finished) {
+                            if (status.job.finishedSuccessful) {
+                                clearInterval(checkJobStatusIv);
+                                resolve();
+                            }
+                            else {
+                                clearInterval(checkJobStatusIv);
+                                reject('Failed to build binary');
+                            }
                         }
                     }
-                }
-                catch (ex2) {
-                    let ex = <Error>ex2;
-                    console.warn('Failed to check job status', ex.message || ex.toString());
-                }
-            }, 3000);
+                    catch (ex2) {
+                        let ex = <Error>ex2;
+                        console.warn('Failed to check job status', ex.message || ex.toString());
+                    }
+                }, 3000);
 
-            ws.onmessage = (msg) => {
-                let data = <string>msg.data;
+                const setupWebsocket = async () => {
+                    if (websocketPingIv) {
+                        clearInterval(websocketPingIv);
+                        websocketPingIv = undefined;
+                    }
+                    if (jobFinished) return;
+
+                    let ws = lastWs = await this.getWebsocket(projectId);
+
+                    websocketPingIv = setInterval(() => {
+                        ws.send('2');
+                    }, 25_000);
+
+                    ws.send(SOCKETIO_EVENT_CODE + JSON.stringify([ 'start-log-stream', { jobId, lastReceivedTimestamp }]));
+
+                    ws.onmessage = (msg) => {
+                        let data = <string>msg.data;
+                        try {
+                            let m = <any[]>JSON.parse(data.replace(/^[0-9]+/, ''));
+                            if (m[0] === 'job-data-' + jobId) {
+                                const m1 = <{ data: string, logLevel: string, timestamp: number }>m[1];
+                                this.emit('buildProgress', m1.data);
+                                allData.push(m1.data);
+                                lastReceivedTimestamp = m1.timestamp;
+                            }
+                            else if (m[0] === 'job-finished-' + jobId) {
+                                const m1 = <{ success: boolean }>m[1];
+                                this.emit('buildProgress', null);
+                                // console.log(BUILD_PREFIX, 'job finished', success);
+                                if (m1.success) {
+                                    clearInterval(checkJobStatusIv);
+                                    resolve();
+                                }
+                                else {
+                                    clearInterval(checkJobStatusIv);
+                                    reject('Failed to build binary');
+                                }
+                            }
+                        }
+                        catch (ex) {
+                            // console.log(BUILD_PREFIX, 'Failed to parse', data);
+                        }
+                    };
+
+                    ws.onclose = async () => {
+                        console.log('ws.onclose');
+                        try {
+                            await setupWebsocket();
+                        }
+                        catch (ex) {
+                            // fail? don't retry - eventually we'll get the finished event from polling too
+                            console.warn(`Failed to set up websocket (after it closed)`, ex);
+                        }
+                    };
+                };
+
                 try {
-                    let m = <any[]>JSON.parse(data.replace(/^[0-9]+/, ''));
-                    if (m[0] === 'job-data-' + jobId) {
-                        this.emit('buildProgress', m[1].data);
-                        allData.push(<string>(<any>m[1]).data);
-                    }
-                    else if (m[0] === 'job-finished-' + jobId) {
-                        let success = (<any>m[1]).success;
-                        this.emit('buildProgress', null);
-                        // console.log(BUILD_PREFIX, 'job finished', success);
-                        if (success) {
-                            clearInterval(checkJobStatusIv);
-                            resolve2();
-                        }
-                        else {
-                            clearInterval(checkJobStatusIv);
-                            reject2('Failed to build binary');
-                        }
-                    }
+                    await setupWebsocket();
                 }
                 catch (ex) {
-                    // console.log(BUILD_PREFIX, 'Failed to parse', data);
+                    console.warn(`Failed to set up websocket`, ex);
                 }
-            };
+            });
 
-            ws.onclose = async () => {
-                clearInterval(pingIv);
-                reject2('Websocket was closed');
-            };
-        });
+            p.then(() => {
+                lastWs?.close();
+            }).catch((err) => {
+                lastWs?.close();
+            });
 
-        p.then(() => {
-            ws.close();
-        }).catch((err) => {
-            ws.close();
-        });
+            await p;
 
-        await p;
-
-        return { deploymentVersion: jobData.deploymentVersion };
+            return { deploymentVersion: jobData.deploymentVersion };
+        }
+        finally {
+            jobFinished = true;
+            if (websocketPingIv) {
+                clearInterval(websocketPingIv);
+                websocketPingIv = undefined;
+            }
+        }
     }
 
     private async buildPublicDeployment(projectId: number, deployType: 'wasm' | 'wasm-browser-simd') {
@@ -543,6 +580,8 @@ export class ClassificationLoader extends Emitter<{
     }
 
     private async getWebsocket(projectId: number): Promise<WebSocket> {
+        console.log('getWebsocket', 'projectId=' + projectId);
+
         let headers: { [k: string]: string } = {
             "Content-Type": "application/json"
         };
