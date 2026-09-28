@@ -1,3 +1,11 @@
+// findSegmentsImpl() is shared by two paths. The browser calls it with a
+// JavaScript number[] after combining the input sensors. The server calls it
+// from studio-worker/worker-impl.ts with a Float32Array view over the
+// SharedArrayBuffer populated by StudioWorker. Keeping both types here lets
+// the server avoid rebuilding the full payload as a JavaScript number[] while
+// preserving the browser path, whose payload values remain number[].
+type NumericSignal = number[] | Float32Array;
+
 export class FindSegments {
     /**
      * Find segments in a data stream. If you call this from the Studio (server-side),
@@ -32,7 +40,7 @@ export class FindSegments {
         });
     }
 
-    static findSegmentsImpl(combinedData: number[], opts: {
+    static findSegmentsImpl(combinedData: NumericSignal, opts: {
         samplesPerWindow: number,
         frequency: number,
         shiftSegments: boolean,
@@ -60,8 +68,12 @@ export class FindSegments {
             if (frameStride < 1) frameStride = 1;
 
             for (let start = searchStart; start < searchEnd - frameLength; start += frameStride) {
-                let dataThisWindow = combinedData.slice(start, start + frameLength);
-                let energy = dataThisWindow.map(a => a * a).reduce((a, b) => a + b, 0);
+                const dataThisWindow = combinedData.slice(start, start + frameLength);
+                const energy = FindSegments.reduceNumeric(
+                    FindSegments.mapNumeric(dataThisWindow, a => a * a),
+                    (a, b) => a + b,
+                    0,
+                );
 
                 windows.push({
                     start: start,
@@ -188,15 +200,15 @@ export class FindSegments {
      * @param rmsThreshold RMS threshold for peaks (percentage of full data RMS)
      * @returns indices in the data list of the found peaks
      */
-    static findPeaks(data: number[], distance: number) {
+    static findPeaks(data: NumericSignal, distance: number) {
         // Calculate the RMS as the min peak height required
         // remove mean first...
 
         let totalMean = this.avg(data);
-        data = data.map(d => d - totalMean);
+        data = FindSegments.mapNumeric(data, d => d - totalMean);
 
-        let squares = data.map(v => v * v);
-        let sum = squares.reduce((curr, v) => (curr + v));
+        let squares = FindSegments.mapNumeric(data, v => v * v);
+        let sum = FindSegments.reduceNumeric(squares, (curr, v) => curr + v, 0);
         let mean = sum / data.length;
         let threshold = Math.sqrt(mean) * 2;
 
@@ -256,7 +268,34 @@ export class FindSegments {
         return indices;
     }
 
-    static avg(signal: number[]): number {
-        return signal.reduce((a, b) => a + b, 0) / signal.length;
+    static avg(signal: NumericSignal): number {
+        return FindSegments.reduceNumeric(signal, (a, b) => a + b, 0) / signal.length;
+    }
+
+    // TypeScript cannot call the native map/reduce overloads on a union of
+    // number[] and Float32Array. These helpers keep the worker on typed arrays
+    // while allowing the browser path to continue using number[].
+
+    private static mapNumeric(signal: NumericSignal, fn: (value: number, index: number) => number): NumericSignal {
+        const mapped: NumericSignal = signal instanceof Float32Array
+            ? new Float32Array(signal.length)
+            : new Array<number>(signal.length);
+
+        for (let ix = 0; ix < signal.length; ix++) {
+            mapped[ix] = fn(signal[ix], ix);
+        }
+        return mapped;
+    }
+
+    private static reduceNumeric(
+        signal: NumericSignal,
+        fn: (previous: number, value: number) => number,
+        initialValue: number
+    ): number {
+        let result = initialValue;
+        for (let ix = 0; ix < signal.length; ix++) {
+            result = fn(result, signal[ix]);
+        }
+        return result;
     }
 }
