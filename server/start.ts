@@ -1,3 +1,4 @@
+import './instrument';
 import { join as pathJoin} from 'node:path';
 import { Server } from 'node:http';
 import { existsSync, readFileSync } from 'node:fs';
@@ -23,23 +24,8 @@ let STATIC_ASSETS_PREFIX = process.env.STATIC_ASSETS_PREFIX
 
 // Web server and socket routing
 const studioApp = express();
-if (process.env.SENTRY_DSN) {
-    sentry.setupExpressErrorHandler(studioApp);
-}
 studioApp.use(new CSPMiddleware(STATIC_ASSETS_PREFIX).getMiddleware());
 studioApp.disable('x-powered-by');
-
-if (process.env.HTTPS_METHOD === "redirect") {
-    studioApp.set('trust proxy', true);
-    studioApp.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-        if (req.secure) {
-            next();
-        }
-        else {
-            res.redirect('https://' + req.headers.host + req.url);
-        }
-    });
-}
 
 if (process.env.HTTPS_METHOD === "redirect") {
     studioApp.set('trust proxy', true);
