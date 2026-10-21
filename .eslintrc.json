@@ -144,7 +144,7 @@
         "@stylistic/comma-dangle": "off",
         "complexity": "off",
         "constructor-super": "error",
-        "curly": ["error", "multi-line"],
+        "curly": ["error", "multi-line", "consistent"],
         "eqeqeq": ["error", "smart"],
         "guard-for-in": "error",
         "id-denylist": "error",
